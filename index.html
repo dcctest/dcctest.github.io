@@ -235,17 +235,20 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
   overlay.draw = function() {};
   overlay.setMap(map);
 
-  // PFHIT var locations = {};
+  var locations = {}; // PFHIT
   
   var location_types = {
     all: 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
 'advocacy': 'http://solidaritynyc.org/wp-content/themes/map/icons/advocacy.png',
-    'finance': 'http://solidaritynyc.org/wp-content/themes/map/icons/food.png',
+    'finance': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
     'food': 'http://solidaritynyc.org/wp-content/themes/map/icons/food.png',
     'health': 'http://solidaritynyc.org/wp-content/themes/map/icons/health.png',
     'housing': 'http://solidaritynyc.org/wp-content/themes/map/icons/housing.png',
     'learn_play': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
-    'transport': 'http://solidaritynyc.org/wp-content/themes/map/icons/transport.png'
+    'transport': 'http://solidaritynyc.org/wp-content/themes/map/icons/transport.png',
+     'amc': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
+     'ed_rec': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
+     'goods_serv': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png'
   };
   
   var infowindow = new google.maps.InfoWindow();
@@ -305,9 +308,18 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
       )
     });
     var content = '<div class="infowindow">' +
-                    '<h3>' + location.title + '</h3>' +
-                    location.content +
-                  '</div>';
+              '<h3>' + location.Name + '</h3>' +
+              location.Description;
+	  if (location.Url) {
+	      content += "<br /><a href='" + location.Url + "'>" + location.Url + "</a>";
+	  }
+	  if (location.Email) {
+	      content += "<br /><tt>" + location.Email + "</tt>";
+	  }
+	  if (location.Tags) {
+	      content += "<br />tagged as: " + location.Tags;
+	  }
+    content += '</div>';
     var openMarker = function() {
       closeMarker();
       hideMapIntro();
@@ -413,7 +425,7 @@ function pfhitDirectory() {
         if ((index % per_column == 0) && index > 0) {
             txt += "    </ul>\n    <ul>\n";
         }
-        txt += "      <li class=\"directory" + location['id'] + " " + location['type'] + "\"><a href=\"#/map/" + location['slug'] + "\" class=\"location-link-" + location['slug'] + "\" data-id=\"" + location['id'] + "\">" + location['title'] + "</a></li>\n";
+        txt += "      <li class=\"directory" + location.id + " " + location.type + "\"><a href=\"#/map/" + location.slug + "\" class=\"location-link-" + location.slug + "\" data-id=\"" + location.id + "\">" + location.Name + "</a></li>\n";
     }
     txt += "    </ul>\n";
 
@@ -428,15 +440,39 @@ function pfhitDirectory() {
       var request = new Request.JSON({
 	  url: 'solidnyc.json',
 	  onSuccess: function(data) {
-	      locations = data.sheet.rows;
+	      locations = data.Map.rows;
+	      var categories = data.Categories.rows;
+	      var cat2short = {};
+	      for (var i=0; i<categories.length; i++) {
+	          var c = categories[i];
+	          cat2short[c.Category] = c.Shortcode;
+	          var filter = new Element('a', {
+	              href: "#type-" + c.Shortcode,
+	              "data-type": c.Shortcode,
+		      style: "background-image: url(" + location_types[c.Shortcode] + ")",
+		      html: c.Category
+	          });
+		  $("location_type").adopt(filter);
+		  var opt = new Element('option', {
+		      value: c.Category,
+		      html: c.Category
+		  });
+		  $("add_category").adopt(opt);
+	      }
 	      function compare(a,b) {
-		  if (a.title < b.title)
+		  if (a.Name < b.Name)
 		      return -1;
-		  if (a.title > b.title)
+		  if (a.Name > b.Name)
 		      return 1;
 		  return 0;
 	      }
 	      locations.sort(compare);
+              for (var i=0; i < locations.length; i++) {
+	        var location = locations[i];
+	        location.slug = "listing_" + i;
+	        location.id = i;
+	        location.type = cat2short[location.Category];
+              }
 	      pfhitDirectory();
 	      pfhitStart();
 	      pfhitDirectorySetup();
@@ -471,15 +507,8 @@ function pfhitDirectory() {
         </label>-->
         <label>
           Location Category
-          <select name="category">
+          <select id="add_category" name="category">
             <option value="all">None selected</option>
-            <option value="advocacy">Advocacy</option>
-<option value="finance">Financial Services</option>
-<option value="food">Food</option>
-<option value="health">Health</option>
-<option value="housing">Housing</option>
-<option value="learn_play">Learn &amp; Play</option>
-<option value="transport">Transport</option>
           </select>
         </label>
         <input type="submit" value="Continue" class="continue" />
@@ -773,13 +802,6 @@ window.addEvent('domready', function() {
         <h2>Directory</h2>
         <div id="location_type" class="filter">
           <a href="#type-all" data-type="all" class="selected first">All categories</a>
-          <a href="#type-advocacy" style="background-image: url(wp-content/themes/map/icons/advocacy.png)" data-type="advocacy">Advocacy</a>
-<a href="#type-finance" style="background-image: url(wp-content/themes/map/icons/finance.png)" data-type="finance">Financial Services</a>
-<a href="#type-food" style="background-image: url(wp-content/themes/map/icons/food.png)" data-type="food">Food</a>
-<a href="#type-health" style="background-image: url(wp-content/themes/map/icons/health.png)" data-type="health">Health</a>
-<a href="#type-housing" style="background-image: url(wp-content/themes/map/icons/housing.png)" data-type="housing">Housing</a>
-<a href="#type-learn_play" style="background-image: url(wp-content/themes/map/icons/learn_play.png)" data-type="learn_play">Learn &amp; Play</a>
-<a href="#type-transport" style="background-image: url(wp-content/themes/map/icons/transport.png)" data-type="transport">Transport</a>
         </div>
       </div>
       <div class="right-column">
