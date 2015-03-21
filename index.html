@@ -19,34 +19,28 @@
     
     var hash = '';
     function hashChanged(newHash) {
-       console.log("hash ");
-       console.log(newHash);
        if (newHash == '') {
          scroll.start(0, 0);
        } else if (newHash != hash) {
-	 console.log("HASH!!");
-	 console.log(newHash);
          hash = newHash;
          path = newHash.split('/');
          if (path[0] == '') {
            path.shift();
          }
          var first = path.shift();
-	 console.log("First is " + first);
          if ($(first)) {
            scroll.start(0, Math.max(0, $(first).getPosition().y - 10));
-           if (first == 'map'||first=='tag');
-           hideMapIntro();
          }
+         if (first == 'map'||first=='tag') {
+           hideMapIntro();
+	 }
          if (path.length > 0) {
            var second = path.shift();
            if (second && second != '') {
-	     console.log("second is " + second);
              if (first == 'map') {
 		 showMapLocation(second);
 	     } else if (first == 'tag') {
 	       var tag_id = parseInt(second);
-	       console.log("I should activate tag " + tag_id);
 	       showTag(tag_id);
              } else if (first == 'videos') {
                playVideo(second);
@@ -291,8 +285,6 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
   }
   
   function updateMarkers(filter) {
-     console.log("UPDATE");
-     console.log(filter);
     if (!filter) {
       var link = $('location_type').getElement('a.selected');
       var type = link ? link.get('data-type') : 'unknown';
@@ -945,8 +937,8 @@ function showMapLocation(slug) {
 	 id: filter_name,
 	 html: tag_name
        });
+       $("location_type").adopt(filter);
      }
-     $("location_type").adopt(filter);
      filter.addClass('selected');
 
      resizeLocations();
