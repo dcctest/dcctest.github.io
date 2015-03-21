@@ -19,35 +19,44 @@
     
     var hash = '';
     function hashChanged(newHash) {
-      if (newHash == '') {
-        scroll.start(0, 0);
-      } else if (newHash != hash) {
-        hash = newHash;
-        path = newHash.split('/');
-        if (path[0] == '') {
-          path.shift();
-        }
-        var first = path.shift();
-        if ($(first)) {
-          scroll.start(0, Math.max(0, $(first).getPosition().y - 10));
-          if (first == 'map') {
-            hideMapIntro();
-          }
-          if (path.length > 0) {
-            var second = path.shift();
-            if (second && second != '') {
-              if (first == 'map') {
-                showMapLocation(second);
-              } else if (first == 'videos') {
-                playVideo(second);
-              } else {
-                showPage(second);
-              }
-            }
-          }
-        }
-      }
-    }
+       console.log("hash ");
+       console.log(newHash);
+       if (newHash == '') {
+         scroll.start(0, 0);
+       } else if (newHash != hash) {
+	 console.log("HASH!!");
+	 console.log(newHash);
+         hash = newHash;
+         path = newHash.split('/');
+         if (path[0] == '') {
+           path.shift();
+         }
+         var first = path.shift();
+	 console.log("First is " + first);
+         if ($(first)) {
+           scroll.start(0, Math.max(0, $(first).getPosition().y - 10));
+           if (first == 'map'||first=='tag');
+           hideMapIntro();
+         }
+         if (path.length > 0) {
+           var second = path.shift();
+           if (second && second != '') {
+	     console.log("second is " + second);
+             if (first == 'map') {
+		 showMapLocation(second);
+	     } else if (first == 'tag') {
+	       var tag_id = parseInt(second);
+	       console.log("I should activate tag " + tag_id);
+	       showTag(tag_id);
+             } else if (first == 'videos') {
+               playVideo(second);
+             } else {
+               showPage(second);
+             }
+           }
+         }
+       }
+     }
     
     function showPage(id) {
       var page = $('page-' + id);
@@ -74,7 +83,7 @@
       hashListener = new HashListener();
       hashListener.addEvent('hashChanged', hashChanged);
       hashListener.start();
-      $$('a[href^="#/"]').addEvent('click', function(e) {
+      $$(document.body).addEvent('click:relay(a[href^="#/"])', function(e) {
         e.stop();
         var href = this.get('href');
         hashListener.updateHash(href);
@@ -236,6 +245,10 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
   overlay.setMap(map);
 
   var locations = {}; // PFHIT
+  var tag_to_locations = {}; // PFHIT
+  var tag_count = 0;
+  var tag_to_id = {};
+  var id_to_tag = {};
   
   var location_types = {
     all: 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
@@ -278,10 +291,13 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
   }
   
   function updateMarkers(filter) {
+     console.log("UPDATE");
+     console.log(filter);
     if (!filter) {
       var link = $('location_type').getElement('a.selected');
-      var type = link.get('data-type');
-      var filter = function(location) {
+      var type = link ? link.get('data-type') : 'unknown';
+      hash = "//type/" + type;
+      filter = function(location) {
         return (type == 'all' || location.type == type);
       }
     }
@@ -291,6 +307,17 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
     });
   }
   
+
+  function getTags(entry) {
+      var raw = entry.Tags;
+      if (raw==null) return [];
+      var lst = raw.trim().split(',');
+      for (var i=0; i<lst.length; i++) {
+	  lst[i] = lst[i].trim();
+      }
+      return lst;
+  }
+
   function pfhitStart() {
 
   locations.each(function(location) {
@@ -299,6 +326,19 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
     var type = location.type; // pfhit
 	  if(!type) {
 	      type = "all";
+	  }
+    var tags = getTags(location);
+	  for (var i=0; i<tags.length; i++) {
+	      var tag = tags[i];
+	      if (!tag_to_locations[tag]) {
+		  tag_to_locations[tag] = {};
+	      }
+	      tag_to_locations[tag][location.id] = true;
+	      if (!tag_to_id[tag]) {
+		  tag_count++;
+		  tag_to_id[tag] = tag_count;
+		  id_to_tag[tag_count] = tag;
+	      }
 	  }
     var marker = new google.maps.Marker({
       position: new google.maps.LatLng(parseFloat(latlng[1]), parseFloat(latlng[2])),
@@ -317,7 +357,14 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
 	      content += "<br /><tt>" + location.Email + "</tt>";
 	  }
 	  if (location.Tags) {
-	      content += "<br />tagged as: " + location.Tags;
+	      content += "<br />tagged as: ";
+	      //+ location.Tags;
+	      for (var i=0; i<tags.length; i++) {
+		  var tag = tags[i];
+		  var id = tag_to_id[tag];
+		  //content += "ran out of steam";
+		  content += "<a href=\"#/tag/" + id + "\" data-id=\"" + id + "\">" + tag + "</a></li>\n";
+	      }
 	  }
     content += '</div>';
     var openMarker = function() {
@@ -835,10 +882,76 @@ function showMapLocation(slug) {
       }
     }
   }
-  
 
-pfhitDirectorySetup = function() {
-  
+   function showTag(tag_id) {
+     var tag_name = id_to_tag[tag_id];
+     var active_locations = tag_to_locations[tag_name];
+
+     $$('#location_type a.selected').removeClass('selected');
+     $$('#directory .slider .holder.selected').removeClass('selected');
+
+     var holder = $('tagged-locations-' + tag_id);
+     if (!holder) {
+       holder = new Element('div', {
+         id: 'tagged-locations-' + tag_id,
+         'class': 'holder'
+       });
+       holder.inject($('directory').getElement('.slider'));
+       var list = new Element('ul');
+       list.inject(holder);
+       $$('#locations-all li').each(function(item) {
+	 var a = item.getElement('a');
+	 if (a) {
+	   var id = parseInt(a.get('data-id'));
+           if (active_locations[id]) {
+             var clone = item.clone();
+             clone.inject(list);
+             if (list.getElements('li').length == 12) {
+               list = new Element('ul');
+               list.inject(holder);
+             }
+           }
+	 }
+       });
+     }
+     holder.addClass('selected');
+     var locationCount = holder.getElements('li').length;
+     var pages = Math.ceil(locationCount / 36);
+     $$('#directory .pagination a').each(function(link, index) {
+       if (index == 0) {
+         link.addClass('selected');
+       } else {
+         link.removeClass('selected');
+       }
+       if (index < pages && !(index == 0 && pages == 1)) {
+         link.removeClass('hidden');
+       } else {
+         link.addClass('hidden');
+       }
+     });
+     $('location-count').set('html', locationCount + ' locations');
+     $('directory').getElement('.slider').setStyle('left', 0);
+     updateMarkers(function(location) {
+       return active_locations[location.id] ? true : false;
+     });
+     closeMarker();
+
+     var filter_name = "tag-select-" + tag_id;
+     var filter = $(filter_name);
+     if (!filter) {
+       filter = new Element('a', {
+	 href: "#/tag/" + tag_id,
+	 "data-id": tag_id,
+	 id: filter_name,
+	 html: tag_name
+       });
+     }
+     $("location_type").adopt(filter);
+     filter.addClass('selected');
+
+     resizeLocations();
+   }
+
   function resizeLocations() {
     var locations = $('directory').getElement('.locations');
     locations.setStyle('height', $('location_type').getSize().y);
@@ -851,6 +964,10 @@ pfhitDirectorySetup = function() {
     });
     $('locations-all').setStyle('width', totalWidth);
   }
+   
+
+pfhitDirectorySetup = function() {
+  
   resizeLocations();
   
   /*function directoryLocationClickHandler(e) {
