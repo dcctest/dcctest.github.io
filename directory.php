@@ -20,9 +20,8 @@ $total = count($locations);
         </div>
       </div>
       <div class="right-column">
-        <div id="location-count">(counting...)</div>
+        <div id="location-count"></div>
         <div class="pagination">
-            (loading pages...)
         </div>
         <div class="locations">
           <div class="slider">
