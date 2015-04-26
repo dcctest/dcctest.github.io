@@ -225,25 +225,14 @@
   
   // pf+ add directory status, to be loaded from external file
   var initializeDirectoryPages = null;
-  var locations = {};
+  var locations = [];
+  var categories = [];
   var tag_to_locations = {};
   var tag_count = 0;
   var tag_to_id = {};
   var id_to_tag = {};
   
-  var location_types = {
-    'all': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
-    'advocacy': 'http://solidaritynyc.org/wp-content/themes/map/icons/advocacy.png',
-    'finance': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
-    'food': 'http://solidaritynyc.org/wp-content/themes/map/icons/food.png',
-    'health': 'http://solidaritynyc.org/wp-content/themes/map/icons/health.png',
-    'housing': 'http://solidaritynyc.org/wp-content/themes/map/icons/housing.png',
-    'learn_play': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
-    'transport': 'http://solidaritynyc.org/wp-content/themes/map/icons/transport.png',
-    'amc': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
-    'ed_rec': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
-    'goods_serv': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png'
-  };
+  var location_types = {};
   // pf-
   
   var infowindow = new google.maps.InfoWindow();
@@ -277,15 +266,28 @@
     if (!filter) {
       var link = $('location_type').getElement('a.selected');
       var type = link ? link.get('data-type') : 'unknown'; // pf+ type may be unknown
+      if (type==null) type = 'unknown';
       hash = "//type/" + type; // pf- mark hash as changed to given type
       filter = function(location) {
         return (type == 'all' || location.type == type);
       }
+      if (type=='unknown') return;
     }
+    var bounds = new google.maps.LatLngBounds();
     Object.each(directory, function(location) {
       var visible = filter(location);
       location.marker.setVisible(visible);
+      if (visible) {
+        bounds.extend(location.marker.getPosition());
+      }
     });
+      /*
+    map.setCenter(bounds.getCenter());
+    map.fitBounds(bounds);
+    map.setZoom(map.getZoom()-1); 
+    if(map.getZoom()>15) map.setZoom(15);
+    if(map.getZoom()<12) map.setZoom(12);
+*/
   }
   
   $('map_intro').getElement('a.explore').addEvent('click', function(e) {
@@ -461,15 +463,16 @@
       url: 'solidnyc.json',
       onSuccess: function(data) {
 	locations = data.Map.rows;
-	var categories = data.Categories.rows;
+	categories = data.Categories.rows;
 	var cat2short = {};
 	for (var i=0; i<categories.length; i++) {
 	  var c = categories[i];
 	  cat2short[c.Category] = c.Shortcode;
+          location_types[c.Shortcode] = "/wp-content/themes/map/icons2015/" + c.Shortcode + ".png";
 	  var filter = new Element('a', {
 	    href: "#type-" + c.Shortcode,
 	    "data-type": c.Shortcode,
-	    style: "background-image: url(" + location_types[c.Shortcode] + ")",
+	    style: "background-image: url(" + location_types[c.Shortcode] + ");",
 	    html: c.Category
 	  });
 	  $("location_type").adopt(filter);
@@ -825,9 +828,8 @@ window.addEvent('domready', function() {
         </div>
       </div>
       <div class="right-column">
-        <div id="location-count">(counting...)</div>
+        <div id="location-count"></div>
         <div class="pagination">
-            (loading pages...)
         </div>
         <div class="locations">
           <div class="slider">
