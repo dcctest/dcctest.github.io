@@ -1,6 +1,6 @@
 Test site, currently showing a tweaked version of [solidaritynyc.org](http://solidaritynyc.org)
 
-To update the curreent theme:
+To update the current theme:
 
  * Grab the latest release zip at https://github.com/dcctest/dcctest.github.io/releases
  * Replace `index.php`, `map.php`, `directory.php`, and `add_location.php` in map theme.
