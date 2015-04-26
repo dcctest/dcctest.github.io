@@ -1,6 +1,5 @@
 <?php
 
-include('mock.php');
 $base_url = get_bloginfo('url');
 if ("http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}" != "$base_url/") {
   header("Location: $base_url/#{$_SERVER['REQUEST_URI']}");

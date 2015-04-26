@@ -328,7 +328,7 @@ Template Name: Map
 
   window.addEvent('domready', function() {
     var request = new Request.JSON({
-      url: 'solidnyc.json',
+      url: '/wp-content/themes/map/data/solidnyc.json',
       onSuccess: function(data) {
 	locations = data.Map.rows;
 	categories = data.Categories.rows;

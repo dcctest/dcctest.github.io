@@ -1,3 +1,4 @@
 default:
-	php index.php > index.html
+	cat mock.php index.php > run.php
+	php run.php > index.html
 
