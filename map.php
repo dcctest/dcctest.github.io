@@ -17,7 +17,7 @@ Template Name: Map
   <a href="#map_size" id="map_size" data-open-label="Smaller map">Bigger map</a>
   <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
   <script>
-  
+
   var mapStyles = [
     {
       featureType: "landscape",
@@ -91,47 +91,28 @@ Template Name: Map
   overlay.draw = function() {};
   overlay.setMap(map);
   
-  var locations = [
-    <?php
-    
-    $locations = map_get_locations();
-    foreach ($locations as $index => $location) {
-      echo json_encode($location);
-      if ($index < count($locations) - 1) {
-        echo ",";
-      }
-      echo "\n";
-      if ($index < count($locations) - 1) {
-        echo "    ";
-      }
-    }
-    
-    ?>
-  ];
+  // pf+ add directory status, to be loaded from external file
+  var initializeDirectoryPages = null;
+  var locations = {};
+  var tag_to_locations = {};
+  var tag_count = 0;
+  var tag_to_id = {};
+  var id_to_tag = {};
   
   var location_types = {
-    <?php
-    
-    $location_types = get_categories(array(
-      'taxonomy' => 'location_type'
-    ));
-    $base_url = get_bloginfo('stylesheet_directory') . '/icons';
-    
-    echo "all: '$base_url/all.png',\n";
-    
-    foreach ($location_types as $index => $type) {
-      echo "'$type->category_nicename': '$base_url/$type->category_nicename.png'";
-      if ($index < count($location_types) - 1) {
-        echo ",";
-      }
-      echo "\n";
-      if ($index < count($location_types) - 1) {
-        echo "    ";
-      }
-    }
-    
-    ?>
+    'all': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
+    'advocacy': 'http://solidaritynyc.org/wp-content/themes/map/icons/advocacy.png',
+    'finance': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
+    'food': 'http://solidaritynyc.org/wp-content/themes/map/icons/food.png',
+    'health': 'http://solidaritynyc.org/wp-content/themes/map/icons/health.png',
+    'housing': 'http://solidaritynyc.org/wp-content/themes/map/icons/housing.png',
+    'learn_play': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
+    'transport': 'http://solidaritynyc.org/wp-content/themes/map/icons/transport.png',
+    'amc': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
+    'ed_rec': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
+    'goods_serv': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png'
   };
+  // pf-
   
   var infowindow = new google.maps.InfoWindow();
   function closeMarker() {
@@ -146,40 +127,8 @@ Template Name: Map
   var iconSize = new google.maps.Size(32, 32);
   var iconOrigin = new google.maps.Point(0, 0);
   var iconAnchor = new google.maps.Point(15, 14);
-  locations.each(function(location) {
-    var latlng = location.latlng.match(/^(.+),(.+)$/);
-    var marker = new google.maps.Marker({
-      position: new google.maps.LatLng(parseFloat(latlng[1]), parseFloat(latlng[2])),
-      map: map,
-      icon: new google.maps.MarkerImage(location_types[location.type],
-        iconSize, iconOrigin, iconAnchor
-      )
-    });
-    var content = '<div class="infowindow">' +
-                    '<h3>' + location.title + '</h3>' +
-                    location.content +
-                  '</div>';
-    var openMarker = function() {
-      closeMarker();
-      hideMapIntro();
-      hideAddLocation();
-      infowindow.setPosition(marker.getPosition());
-      infowindow.setContent(content);
-      infowindow.open(map, marker);
-      //map.panTo(marker.getPosition());
-      var directory = $$('#directory .holder.selected .directory' + location.id);
-      if (directory) {
-        directory[0].addClass('selected');
-      }
-    };
-    google.maps.event.addListener(marker, 'click', function () {
-      hashListener.updateHash('#/map/' + location.slug);
-    });
-    location.marker = marker;
-    location.openMarker = openMarker;
-    directory['location' + location.id] = location;
-  });
-  
+  // pf +- locations.each processing removed from here, since we don't have locations yet
+
   var mapIntroHidden = false;
   var logoInterval;
   function hideMapIntro() {
@@ -195,8 +144,9 @@ Template Name: Map
   function updateMarkers(filter) {
     if (!filter) {
       var link = $('location_type').getElement('a.selected');
-      var type = link.get('data-type');
-      var filter = function(location) {
+      var type = link ? link.get('data-type') : 'unknown'; // pf+ type may be unknown
+      hash = "//type/" + type; // pf- mark hash as changed to given type
+      filter = function(location) {
         return (type == 'all' || location.type == type);
       }
     }
@@ -210,51 +160,215 @@ Template Name: Map
     e.stop();
     hideMapIntro();
   });
-  
-  window.addEvent('domready', function() {
-    var logo = $$('#logo h1 span')[0];
-    var logos = [logo];
-    for (var i = 1; i < 12; i++) {
-      var clone = logo.clone();
-      var num = i + 1;
-      clone.setStyle('background-image', 'url("wp-content/themes/map/logo/logo' + num + '.png")');
-      clone.fade('hide');
-      clone.inject($('logo').getElement('h1'));
-      logos.push(clone);
-    }
-    var index = 0;
-    var z = 1;
-    logoInterval = setInterval(function() {
-      var prevIndex = index;
-      index = (index + 1) % logos.length;
-      z++;
-      logos[index].fade('hide');
-      logos[index].setStyle('z-index', z);
-      logos[index].fade('in').retrieve('tween').chain(function() {
-        logos[prevIndex].fade('hide');
-      });
-    }, 10000);
-    
-    
-    var smallSize = $('map_canvas').getSize().y;
-    var origLabel = $('map_size').get('html');
-    
-    $('map_size').addEvent('click', function(e) {
-      e.stop();
-      var largeSize = window.getSize().y - 42;
-      if (largeSize < 600) {
-        largeSize = 600;
+
+  // pf+ add tag support
+  function getTags(entry) {
+      var raw = entry.Tags;
+      if (raw==null) return [];
+      var lst = raw.trim().split(',');
+      for (var i=0; i<lst.length; i++) {
+	  lst[i] = lst[i].trim();
       }
-      $('map_size').toggleClass('open');
-      if ($('map_size').hasClass('open')) {
-        $('map_canvas').setStyle('height', largeSize);
-        $('map_size').set('html', $('map_size').get('data-open-label'));
-      } else {
-        $('map_canvas').setStyle('height', smallSize);
-        $('map_size').set('html', origLabel);
+      return lst;
+  }
+  // pf-
+
+  // pf+ callback
+  function initializeLocations() {
+
+    locations.each(function(location) {
+      try {
+        var latlng = location.latlng.match(/^(.+),(.+)$/);
+        var type = location.type;
+	if(!type) {
+	  type = "all";
+	}
+        var tags = getTags(location);
+	for (var i=0; i<tags.length; i++) {
+	  var tag = tags[i];
+	  if (!tag_to_locations[tag]) {
+	    tag_to_locations[tag] = {};
+	  }
+	  tag_to_locations[tag][location.id] = true;
+	  if (!tag_to_id[tag]) {
+	    tag_count++;
+	    tag_to_id[tag] = tag_count;
+	    id_to_tag[tag_count] = tag;
+	  }
+	}
+        var marker = new google.maps.Marker({
+          position: new google.maps.LatLng(parseFloat(latlng[1]), parseFloat(latlng[2])),
+          map: map,
+          icon: new google.maps.MarkerImage(location_types[type],
+                                            iconSize, iconOrigin, iconAnchor
+                                           )
+        });
+        var content = '<div class="infowindow">' +
+          '<h3>' + location.Name + '</h3>' +
+          location.Description;
+	if (location.Url) {
+	  content += "<br /><a href='" + location.Url + "'>" + location.Url + "</a>";
+	}
+	if (location.Email) {
+	  content += "<br /><tt>" + location.Email + "</tt>";
+	}
+	if (location.Tags) {
+	  content += "<br />tagged as: ";
+	  for (var i=0; i<tags.length; i++) {
+	    var tag = tags[i];
+	    var id = tag_to_id[tag];
+	    content += "<a href=\"#/tag/" + id + "\" data-id=\"" + id + "\">" + tag + "</a></li>\n";
+	  }
+	}
+        content += '</div>';
+        var openMarker = function() {
+          closeMarker();
+          hideMapIntro();
+          hideAddLocation();
+          infowindow.setPosition(marker.getPosition());
+          infowindow.setContent(content);
+          infowindow.open(map, marker);
+          //map.panTo(marker.getPosition());
+          var directory = $$('#directory .holder.selected .directory' + location.id);
+          if (directory) {
+            directory[0].addClass('selected');
+          }
+        };
+        google.maps.event.addListener(marker, 'click', function () {
+          hashListener.updateHash('#/map/' + location.slug);
+        });
+        location.marker = marker;
+        location.openMarker = openMarker;
+        directory['location' + location.id] = location;
+      } catch (e) {
+	console.log("Problem with location");
+	console.log(location);
+	console.log(e);
       }
-      google.maps.event.trigger(map, "resize");
     });
+
+    var fn = (function() {
+      var logo = $$('#logo h1 span')[0];
+      var logos = [logo];
+      for (var i = 1; i < 12; i++) {
+        var clone = logo.clone();
+        var num = i + 1;
+        clone.setStyle('background-image', 'url("wp-content/themes/map/logo/logo' + num + '.png")');
+        clone.fade('hide');
+        clone.inject($('logo').getElement('h1'));
+        logos.push(clone);
+      }
+      var index = 0;
+      var z = 1;
+      logoInterval = setInterval(function() {
+        var prevIndex = index;
+        index = (index + 1) % logos.length;
+        z++;
+        logos[index].fade('hide');
+        logos[index].setStyle('z-index', z);
+        logos[index].fade('in').retrieve('tween').chain(function() {
+          logos[prevIndex].fade('hide');
+        });
+      }, 10000);
+      
+      
+      var smallSize = $('map_canvas').getSize().y;
+      var origLabel = $('map_size').get('html');
+      
+      $('map_size').addEvent('click', function(e) {
+        e.stop();
+        var largeSize = window.getSize().y - 42;
+        if (largeSize < 600) {
+          largeSize = 600;
+        }
+        $('map_size').toggleClass('open');
+        if ($('map_size').hasClass('open')) {
+          $('map_canvas').setStyle('height', largeSize);
+          $('map_size').set('html', $('map_size').get('data-open-label'));
+        } else {
+          $('map_canvas').setStyle('height', smallSize);
+          $('map_size').set('html', origLabel);
+        }
+        google.maps.event.trigger(map, "resize");
+      });
+    });
+    
+    fn();
+  }
+
+  function initializeDirectory() {
+    // code translated directory from original php
+    // locations will be set before call - may need to sort though
+    var per_column = 12;
+    var total = locations.length;
+    var pages = Math.ceil(total / (per_column * 3));
+    var txt = "";
+    for (var i = 0; i < pages; i++) {
+      var n = i + 1;
+      var selected = (i == 0) ? ' class="selected"' : '';
+      txt += "<a href=\"#directory-page" + n + "\"" +selected+ ">" + n + "</a>";
+    }
+    var pagination_html = txt;
+    txt = "<ul>\n";
+    for (var index=0; index<locations.length; index++) {
+      var location = locations[index];
+      if ((index % per_column == 0) && index > 0) {
+        txt += "    </ul>\n    <ul>\n";
+      }
+      txt += "      <li class=\"directory" + location.id + " " + location.type + "\"><a href=\"#/map/" + location.slug + "\" class=\"location-link-" + location.slug + "\" data-id=\"" + location.id + "\">" + location.Name + "</a></li>\n";
+    }
+    txt += "    </ul>\n";
+    var directory_html = txt;
+    $("location-count").set('html',total + " locations");
+    $$(".pagination").set('html',pagination_html);
+    $("locations-all").set('html',directory_html);
+  }
+
+  window.addEvent('domready', function() {
+    var request = new Request.JSON({
+      url: 'solidnyc.json',
+      onSuccess: function(data) {
+	locations = data.Map.rows;
+	var categories = data.Categories.rows;
+	var cat2short = {};
+	for (var i=0; i<categories.length; i++) {
+	  var c = categories[i];
+	  cat2short[c.Category] = c.Shortcode;
+	  var filter = new Element('a', {
+	    href: "#type-" + c.Shortcode,
+	    "data-type": c.Shortcode,
+	    style: "background-image: url(" + location_types[c.Shortcode] + ")",
+	    html: c.Category
+	  });
+	  $("location_type").adopt(filter);
+	  var opt = new Element('option', {
+	    value: c.Category,
+	    html: c.Category
+	  });
+	  $("add_category").adopt(opt);
+	}
+	function compare(a,b) {
+	  if (a.Name < b.Name)
+	    return -1;
+	  if (a.Name > b.Name)
+	    return 1;
+	  return 0;
+	}
+	locations.sort(compare);
+        for (var i=0; i < locations.length; i++) {
+	  var location = locations[i];
+	  location.slug = "listing_" + i;
+	  location.id = i;
+	  location.type = cat2short[location.Category];
+        }
+	initializeDirectory();
+	initializeLocations();
+	initializeDirectoryPages();
+      },
+      onError: function(txt,err) {
+	console.log(err);
+      }
+    }).get();
   });
   
   </script>

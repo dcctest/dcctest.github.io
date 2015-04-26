@@ -54,6 +54,7 @@ $dir_post->post_title = "Directory";
 $dir_post->post_template = "directory";
 
 $posts = [$map_post, $dir_post];
+$post = null;
 
 function have_posts() {
     global $page_at;
@@ -63,7 +64,7 @@ function have_posts() {
 
 function the_title() {
     global $post;
-    return $post->post_title;
+    echo $post->post_title;
 }
 
 function the_post() {

@@ -20,7 +20,7 @@
         </label>-->
         <label>
           Location Category
-          <select name="category">
+          <select id="add_category" name="category"> <!-- pf +- added id -->
             <option value="all">None selected</option>
             <?php
             

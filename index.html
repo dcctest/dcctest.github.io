@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-    <title>SolidarityNYC</title>
-    <meta name="description" content="" />
+    <title>SolidNYC</title>
+    <meta name="description" content="SolidNYC" />
     <meta name="viewport" content="width=device-width" />
     <link rel="stylesheet" href="wp-content/themes/map/reset.min.css" />
     <link rel="stylesheet" href="wp-content/themes/map/wordpress.css" />
@@ -13,44 +13,46 @@
     <script src="wp-content/themes/map/mootools-more-1.4.0.1.js"></script>
     <script src="wp-content/themes/map/HashListener.js"></script>
     <!--[if lt IE 9]>
-    <script src="http://solidaritynyc.org/wp-content/themes/map/html5shiv.js"></script>
+    <script src="wp-content/themes/map/html5shiv.js"></script>
     <![endif]-->
     <script>
     
     var hash = '';
     function hashChanged(newHash) {
-       if (newHash == '') {
-         scroll.start(0, 0);
-       } else if (newHash != hash) {
-         hash = newHash;
-         path = newHash.split('/');
-         if (path[0] == '') {
-           path.shift();
-         }
-         var first = path.shift();
-         if ($(first)) {
-           scroll.start(0, Math.max(0, $(first).getPosition().y - 10));
-         }
-         if (first == 'map'||first=='tag') {
-           hideMapIntro();
-	 }
-         if (path.length > 0) {
-           var second = path.shift();
-           if (second && second != '') {
-             if (first == 'map') {
-		 showMapLocation(second);
-	     } else if (first == 'tag') {
-	       var tag_id = parseInt(second);
-	       showTag(tag_id);
-             } else if (first == 'videos') {
-               playVideo(second);
-             } else {
-               showPage(second);
-             }
-           }
-         }
-       }
-     }
+      if (newHash == '') {
+        scroll.start(0, 0);
+      } else if (newHash != hash) {
+        hash = newHash;
+        path = newHash.split('/');
+        if (path[0] == '') {
+          path.shift();
+        }
+        var first = path.shift();
+        // pf+ modifications to logic here to support tag urls
+        if ($(first)) {
+          scroll.start(0, Math.max(0, $(first).getPosition().y - 10));
+        }
+        if (first == 'map'||first=='tag') {
+          hideMapIntro();
+        }
+        if (path.length > 0) {
+          var second = path.shift();
+          if (second && second != '') {
+            if (first == 'map') {
+              showMapLocation(second);
+            } else if (first == 'tag') {
+                var tag_id = parseInt(second);
+                showTag(tag_id);
+            } else if (first == 'videos') {
+              playVideo(second);
+            } else {
+              showPage(second);
+            }
+          }
+        }
+        // pf-
+      }
+    }
     
     function showPage(id) {
       var page = $('page-' + id);
@@ -77,7 +79,9 @@
       hashListener = new HashListener();
       hashListener.addEvent('hashChanged', hashChanged);
       hashListener.start();
+      // pf+ modified event to apply in tag-generated listings
       $$(document.body).addEvent('click:relay(a[href^="#/"])', function(e) {
+      // pf-
         e.stop();
         var href = this.get('href');
         hashListener.updateHash(href);
@@ -115,34 +119,17 @@
     }
     
     </script>
-    <link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://solidaritynyc.org/xmlrpc.php?rsd" />
-<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="http://solidaritynyc.org/wp-includes/wlwmanifest.xml" /> 
-<meta name="generator" content="WordPress 3.9.2" />
-<script type="text/javascript">
-var _gaq = _gaq || [];
-_gaq.push(['_setAccount', 'UA-511628-15']);
-_gaq.push(['_trackPageview']);
-(function() {
-var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-})();
-</script>
-  </head>
+      </head>
   <body>
     <nav>
       <div class="extent">
         <div class="left-column">
-          <h1><a href="#/">SolidarityNYC</a></h1>
+          <h1><a href="#/">SolidNYC</a></h1>
         </div>
         <div class="right-column">
           <div class="pages">
-            <a href="#/map" class="map">Map</a>
-<a href="#/directory" class="directory">Directory</a>
-<a href="#/videos" class="videos">Videos</a>
-<a href="#/resources" class="resources">Resources</a>
-<a href="#/about" class="about">About</a>
-<a href="#/get-involved" class="get-involved">Support Us</a>
+            <a href="#/Map" class="Map">Map</a>
+<a href="#/Directory" class="Directory">Directory</a>
           </div>
         </div>
         <div class="clear"></div>
@@ -162,8 +149,6 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
   <a href="#map_size" id="map_size" data-open-label="Smaller map">Bigger map</a>
   <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
   <script>
-
-  var pfhitDirectorySetup = null;  
 
   var mapStyles = [
     {
@@ -237,26 +222,29 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
   var overlay = new google.maps.OverlayView();
   overlay.draw = function() {};
   overlay.setMap(map);
-
-  var locations = {}; // PFHIT
-  var tag_to_locations = {}; // PFHIT
+  
+  // pf+ add directory status, to be loaded from external file
+  var initializeDirectoryPages = null;
+  var locations = {};
+  var tag_to_locations = {};
   var tag_count = 0;
   var tag_to_id = {};
   var id_to_tag = {};
   
   var location_types = {
-    all: 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
-'advocacy': 'http://solidaritynyc.org/wp-content/themes/map/icons/advocacy.png',
+    'all': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
+    'advocacy': 'http://solidaritynyc.org/wp-content/themes/map/icons/advocacy.png',
     'finance': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
     'food': 'http://solidaritynyc.org/wp-content/themes/map/icons/food.png',
     'health': 'http://solidaritynyc.org/wp-content/themes/map/icons/health.png',
     'housing': 'http://solidaritynyc.org/wp-content/themes/map/icons/housing.png',
     'learn_play': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
     'transport': 'http://solidaritynyc.org/wp-content/themes/map/icons/transport.png',
-     'amc': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
-     'ed_rec': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
-     'goods_serv': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png'
+    'amc': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png',
+    'ed_rec': 'http://solidaritynyc.org/wp-content/themes/map/icons/learn_play.png',
+    'goods_serv': 'http://solidaritynyc.org/wp-content/themes/map/icons/all.png'
   };
+  // pf-
   
   var infowindow = new google.maps.InfoWindow();
   function closeMarker() {
@@ -271,6 +259,7 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
   var iconSize = new google.maps.Size(32, 32);
   var iconOrigin = new google.maps.Point(0, 0);
   var iconAnchor = new google.maps.Point(15, 14);
+  // pf +- locations.each processing removed from here, since we don't have locations yet
 
   var mapIntroHidden = false;
   var logoInterval;
@@ -287,8 +276,8 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
   function updateMarkers(filter) {
     if (!filter) {
       var link = $('location_type').getElement('a.selected');
-      var type = link ? link.get('data-type') : 'unknown';
-      hash = "//type/" + type;
+      var type = link ? link.get('data-type') : 'unknown'; // pf+ type may be unknown
+      hash = "//type/" + type; // pf- mark hash as changed to given type
       filter = function(location) {
         return (type == 'all' || location.type == type);
       }
@@ -299,7 +288,12 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
     });
   }
   
+  $('map_intro').getElement('a.explore').addEvent('click', function(e) {
+    e.stop();
+    hideMapIntro();
+  });
 
+  // pf+ add tag support
   function getTags(entry) {
       var raw = entry.Tags;
       if (raw==null) return [];
@@ -309,217 +303,204 @@ var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga
       }
       return lst;
   }
+  // pf-
 
-  function pfhitStart() {
+  // pf+ callback
+  function initializeLocations() {
 
-  locations.each(function(location) {
+    locations.each(function(location) {
       try {
-    var latlng = location.latlng.match(/^(.+),(.+)$/);
-    var type = location.type; // pfhit
-	  if(!type) {
-	      type = "all";
+        var latlng = location.latlng.match(/^(.+),(.+)$/);
+        var type = location.type;
+	if(!type) {
+	  type = "all";
+	}
+        var tags = getTags(location);
+	for (var i=0; i<tags.length; i++) {
+	  var tag = tags[i];
+	  if (!tag_to_locations[tag]) {
+	    tag_to_locations[tag] = {};
 	  }
-    var tags = getTags(location);
+	  tag_to_locations[tag][location.id] = true;
+	  if (!tag_to_id[tag]) {
+	    tag_count++;
+	    tag_to_id[tag] = tag_count;
+	    id_to_tag[tag_count] = tag;
+	  }
+	}
+        var marker = new google.maps.Marker({
+          position: new google.maps.LatLng(parseFloat(latlng[1]), parseFloat(latlng[2])),
+          map: map,
+          icon: new google.maps.MarkerImage(location_types[type],
+                                            iconSize, iconOrigin, iconAnchor
+                                           )
+        });
+        var content = '<div class="infowindow">' +
+          '<h3>' + location.Name + '</h3>' +
+          location.Description;
+	if (location.Url) {
+	  content += "<br /><a href='" + location.Url + "'>" + location.Url + "</a>";
+	}
+	if (location.Email) {
+	  content += "<br /><tt>" + location.Email + "</tt>";
+	}
+	if (location.Tags) {
+	  content += "<br />tagged as: ";
 	  for (var i=0; i<tags.length; i++) {
-	      var tag = tags[i];
-	      if (!tag_to_locations[tag]) {
-		  tag_to_locations[tag] = {};
-	      }
-	      tag_to_locations[tag][location.id] = true;
-	      if (!tag_to_id[tag]) {
-		  tag_count++;
-		  tag_to_id[tag] = tag_count;
-		  id_to_tag[tag_count] = tag;
-	      }
+	    var tag = tags[i];
+	    var id = tag_to_id[tag];
+	    content += "<a href=\"#/tag/" + id + "\" data-id=\"" + id + "\">" + tag + "</a></li>\n";
 	  }
-    var marker = new google.maps.Marker({
-      position: new google.maps.LatLng(parseFloat(latlng[1]), parseFloat(latlng[2])),
-      map: map,
-      icon: new google.maps.MarkerImage(location_types[type],
-        iconSize, iconOrigin, iconAnchor
-      )
-    });
-    var content = '<div class="infowindow">' +
-              '<h3>' + location.Name + '</h3>' +
-              location.Description;
-	  if (location.Url) {
-	      content += "<br /><a href='" + location.Url + "'>" + location.Url + "</a>";
-	  }
-	  if (location.Email) {
-	      content += "<br /><tt>" + location.Email + "</tt>";
-	  }
-	  if (location.Tags) {
-	      content += "<br />tagged as: ";
-	      //+ location.Tags;
-	      for (var i=0; i<tags.length; i++) {
-		  var tag = tags[i];
-		  var id = tag_to_id[tag];
-		  //content += "ran out of steam";
-		  content += "<a href=\"#/tag/" + id + "\" data-id=\"" + id + "\">" + tag + "</a></li>\n";
-	      }
-	  }
-    content += '</div>';
-    var openMarker = function() {
-      closeMarker();
-      hideMapIntro();
-      hideAddLocation();
-      infowindow.setPosition(marker.getPosition());
-      infowindow.setContent(content);
-      infowindow.open(map, marker);
-      //map.panTo(marker.getPosition());
-      var directory = $$('#directory .holder.selected .directory' + location.id);
-      if (directory) {
-        directory[0].addClass('selected');
-      }
-    };
-    google.maps.event.addListener(marker, 'click', function () {
-      hashListener.updateHash('#/map/' + location.slug);
-    });
-    location.marker = marker;
-    location.openMarker = openMarker;
-    directory['location' + location.id] = location;
+	}
+        content += '</div>';
+        var openMarker = function() {
+          closeMarker();
+          hideMapIntro();
+          hideAddLocation();
+          infowindow.setPosition(marker.getPosition());
+          infowindow.setContent(content);
+          infowindow.open(map, marker);
+          //map.panTo(marker.getPosition());
+          var directory = $$('#directory .holder.selected .directory' + location.id);
+          if (directory) {
+            directory[0].addClass('selected');
+          }
+        };
+        google.maps.event.addListener(marker, 'click', function () {
+          hashListener.updateHash('#/map/' + location.slug);
+        });
+        location.marker = marker;
+        location.openMarker = openMarker;
+        directory['location' + location.id] = location;
       } catch (e) {
-	  console.log("Problem with location");
-	  console.log(location);
-	  console.log(e);
+	console.log("Problem with location");
+	console.log(location);
+	console.log(e);
       }
-  });
-  
-  $('map_intro').getElement('a.explore').addEvent('click', function(e) {
-    e.stop();
-    hideMapIntro();
-  });
-  
-  var fn = (function() {
-		  var logo = $$('#logo h1 span')[0];
-    var logos = [logo];
-    for (var i = 1; i < 12; i++) {
-      var clone = logo.clone();
-      var num = i + 1;
-      clone.setStyle('background-image', 'url("wp-content/themes/map/logo/logo' + num + '.png")');
-      clone.fade('hide');
-      clone.inject($('logo').getElement('h1'));
-      logos.push(clone);
-    }
-    var index = 0;
-    var z = 1;
-    logoInterval = setInterval(function() {
-      var prevIndex = index;
-      index = (index + 1) % logos.length;
-      z++;
-      logos[index].fade('hide');
-      logos[index].setStyle('z-index', z);
-      logos[index].fade('in').retrieve('tween').chain(function() {
-        logos[prevIndex].fade('hide');
-      });
-    }, 10000);
-    
-    
-    var smallSize = $('map_canvas').getSize().y;
-    var origLabel = $('map_size').get('html');
-    
-    $('map_size').addEvent('click', function(e) {
-      e.stop();
-      var largeSize = window.getSize().y - 42;
-      if (largeSize < 600) {
-        largeSize = 600;
-      }
-      $('map_size').toggleClass('open');
-      if ($('map_size').hasClass('open')) {
-        $('map_canvas').setStyle('height', largeSize);
-        $('map_size').set('html', $('map_size').get('data-open-label'));
-      } else {
-        $('map_canvas').setStyle('height', smallSize);
-        $('map_size').set('html', origLabel);
-      }
-      google.maps.event.trigger(map, "resize");
     });
-  });
 
-  fn();
-
+    var fn = (function() {
+      var logo = $$('#logo h1 span')[0];
+      var logos = [logo];
+      for (var i = 1; i < 12; i++) {
+        var clone = logo.clone();
+        var num = i + 1;
+        clone.setStyle('background-image', 'url("wp-content/themes/map/logo/logo' + num + '.png")');
+        clone.fade('hide');
+        clone.inject($('logo').getElement('h1'));
+        logos.push(clone);
+      }
+      var index = 0;
+      var z = 1;
+      logoInterval = setInterval(function() {
+        var prevIndex = index;
+        index = (index + 1) % logos.length;
+        z++;
+        logos[index].fade('hide');
+        logos[index].setStyle('z-index', z);
+        logos[index].fade('in').retrieve('tween').chain(function() {
+          logos[prevIndex].fade('hide');
+        });
+      }, 10000);
+      
+      
+      var smallSize = $('map_canvas').getSize().y;
+      var origLabel = $('map_size').get('html');
+      
+      $('map_size').addEvent('click', function(e) {
+        e.stop();
+        var largeSize = window.getSize().y - 42;
+        if (largeSize < 600) {
+          largeSize = 600;
+        }
+        $('map_size').toggleClass('open');
+        if ($('map_size').hasClass('open')) {
+          $('map_canvas').setStyle('height', largeSize);
+          $('map_size').set('html', $('map_size').get('data-open-label'));
+        } else {
+          $('map_canvas').setStyle('height', smallSize);
+          $('map_size').set('html', origLabel);
+        }
+        google.maps.event.trigger(map, "resize");
+      });
+    });
+    
+    fn();
   }
 
-
-function pfhitDirectory() {
-
+  function initializeDirectory() {
     // code translated directory from original php
-
     // locations will be set before call - may need to sort though
     var per_column = 12;
     var total = locations.length;
-
     var pages = Math.ceil(total / (per_column * 3));
     var txt = "";
     for (var i = 0; i < pages; i++) {
-        var n = i + 1;
-        var selected = (i == 0) ? ' class="selected"' : '';
-        txt += "<a href=\"#directory-page" + n + "\"" +selected+ ">" + n + "</a>";
+      var n = i + 1;
+      var selected = (i == 0) ? ' class="selected"' : '';
+      txt += "<a href=\"#directory-page" + n + "\"" +selected+ ">" + n + "</a>";
     }
     var pagination_html = txt;
-    
     txt = "<ul>\n";
     for (var index=0; index<locations.length; index++) {
-	var location = locations[index];
-        if ((index % per_column == 0) && index > 0) {
-            txt += "    </ul>\n    <ul>\n";
-        }
-        txt += "      <li class=\"directory" + location.id + " " + location.type + "\"><a href=\"#/map/" + location.slug + "\" class=\"location-link-" + location.slug + "\" data-id=\"" + location.id + "\">" + location.Name + "</a></li>\n";
+      var location = locations[index];
+      if ((index % per_column == 0) && index > 0) {
+        txt += "    </ul>\n    <ul>\n";
+      }
+      txt += "      <li class=\"directory" + location.id + " " + location.type + "\"><a href=\"#/map/" + location.slug + "\" class=\"location-link-" + location.slug + "\" data-id=\"" + location.id + "\">" + location.Name + "</a></li>\n";
     }
     txt += "    </ul>\n";
-
     var directory_html = txt;
-
     $("location-count").set('html',total + " locations");
     $$(".pagination").set('html',pagination_html);
     $("locations-all").set('html',directory_html);
-}
+  }
 
   window.addEvent('domready', function() {
-      var request = new Request.JSON({
-	  url: 'solidnyc.json',
-	  onSuccess: function(data) {
-	      locations = data.Map.rows;
-	      var categories = data.Categories.rows;
-	      var cat2short = {};
-	      for (var i=0; i<categories.length; i++) {
-	          var c = categories[i];
-	          cat2short[c.Category] = c.Shortcode;
-	          var filter = new Element('a', {
-	              href: "#type-" + c.Shortcode,
-	              "data-type": c.Shortcode,
-		      style: "background-image: url(" + location_types[c.Shortcode] + ")",
-		      html: c.Category
-	          });
-		  $("location_type").adopt(filter);
-		  var opt = new Element('option', {
-		      value: c.Category,
-		      html: c.Category
-		  });
-		  $("add_category").adopt(opt);
-	      }
-	      function compare(a,b) {
-		  if (a.Name < b.Name)
-		      return -1;
-		  if (a.Name > b.Name)
-		      return 1;
-		  return 0;
-	      }
-	      locations.sort(compare);
-              for (var i=0; i < locations.length; i++) {
-	        var location = locations[i];
-	        location.slug = "listing_" + i;
-	        location.id = i;
-	        location.type = cat2short[location.Category];
-              }
-	      pfhitDirectory();
-	      pfhitStart();
-	      pfhitDirectorySetup();
-	  },
-	  onError: function(txt,err) {
-	      console.log(err);
-	  }
-      }).get();
+    var request = new Request.JSON({
+      url: 'solidnyc.json',
+      onSuccess: function(data) {
+	locations = data.Map.rows;
+	var categories = data.Categories.rows;
+	var cat2short = {};
+	for (var i=0; i<categories.length; i++) {
+	  var c = categories[i];
+	  cat2short[c.Category] = c.Shortcode;
+	  var filter = new Element('a', {
+	    href: "#type-" + c.Shortcode,
+	    "data-type": c.Shortcode,
+	    style: "background-image: url(" + location_types[c.Shortcode] + ")",
+	    html: c.Category
+	  });
+	  $("location_type").adopt(filter);
+	  var opt = new Element('option', {
+	    value: c.Category,
+	    html: c.Category
+	  });
+	  $("add_category").adopt(opt);
+	}
+	function compare(a,b) {
+	  if (a.Name < b.Name)
+	    return -1;
+	  if (a.Name > b.Name)
+	    return 1;
+	  return 0;
+	}
+	locations.sort(compare);
+        for (var i=0; i < locations.length; i++) {
+	  var location = locations[i];
+	  location.slug = "listing_" + i;
+	  location.id = i;
+	  location.type = cat2short[location.Category];
+        }
+	initializeDirectory();
+	initializeLocations();
+	initializeDirectoryPages();
+      },
+      onError: function(txt,err) {
+	console.log(err);
+      }
+    }).get();
   });
   
   </script>
@@ -531,7 +512,7 @@ function pfhitDirectory() {
   </div>
   <div id="location_options">
     <div class="controls">
-      <form action="http://solidaritynyc.org/wp-admin/admin-ajax.php" method="post" id="add_location_form" class="selected">
+      <form action="http://localhost/wp-admin/admin-ajax.php" method="post" id="add_location_form" class="selected">
         <label>
           Location Name <span class="help">required</span>
           <input type="text" name="name" />
@@ -546,14 +527,14 @@ function pfhitDirectory() {
         </label>-->
         <label>
           Location Category
-          <select id="add_category" name="category">
+          <select id="add_category" name="category"> <!-- pf +- added id -->
             <option value="all">None selected</option>
-          </select>
+                      </select>
         </label>
         <input type="submit" value="Continue" class="continue" />
         <div class="clear"></div>
       </form>
-      <form action="http://solidaritynyc.org/wp-admin/admin-ajax.php" id="location_placement_form">
+      <form action="http://localhost/wp-admin/admin-ajax.php" id="location_placement_form">
         <a href="#" class="back">Go back</a>
         <p>Drag the marker onto the map or search for the location’s address.</p>
         <div class="drag-drop">
@@ -567,7 +548,7 @@ function pfhitDirectory() {
         <input type="button" value="Continue" class="continue" />
         <div class="clear"></div>
       </form>
-      <form action="http://solidaritynyc.org/wp-admin/admin-ajax.php" id="confirm_location_form">
+      <form action="http://localhost/wp-admin/admin-ajax.php" id="confirm_location_form">
         <a href="#" class="back">Go back</a>
         <p>Zoom in closer if you’d like to position your marker more precisely. <strong>You can drag the map marker to move it.</strong></p>
         <div class="zoom">
@@ -578,7 +559,7 @@ function pfhitDirectory() {
         <p>Click the submit button when you’re finished.</p>
         <input type="submit" value="Submit" />
       </form>
-      <form action="http://solidaritynyc.org/wp-admin/admin-ajax.php" id="location_pending_form">
+      <form action="http://localhost/wp-admin/admin-ajax.php" id="location_pending_form">
         <p class="thanks">Thank you for contributing to SolidarityNYC!<p>
         <p>We’ve received your submission and it is now pending moderation from our team of volunteers.</p>
         <p>If you have any questions or comments, please feel free to <a href="#/get-involved">contact us</a>.</p>
@@ -844,14 +825,14 @@ window.addEvent('domready', function() {
         </div>
       </div>
       <div class="right-column">
-    <div id="location-count">(counting...)</div>
+        <div id="location-count">(counting...)</div>
         <div class="pagination">
-           (loading pages...)
+            (loading pages...)
         </div>
         <div class="locations">
           <div class="slider">
             <div id="locations-all" class="holder selected">
-    (loading locations...)
+                (loading locations...)
               <div class="clear"></div>
             </div>
           </div>
@@ -861,8 +842,8 @@ window.addEvent('domready', function() {
     </div>
   </div>
   <script>
-
-function showMapLocation(slug) {
+  
+  function showMapLocation(slug) {
     var link = $('directory').getElement('a.location-link-' + slug);
     if (link) {
       var id = link.get('data-id');
@@ -875,74 +856,74 @@ function showMapLocation(slug) {
     }
   }
 
-   function showTag(tag_id) {
-     var tag_name = id_to_tag[tag_id];
-     var active_locations = tag_to_locations[tag_name];
+  function showTag(tag_id) {
+    var tag_name = id_to_tag[tag_id];
+    var active_locations = tag_to_locations[tag_name];
+    
+    $$('#location_type a.selected').removeClass('selected');
+    $$('#directory .slider .holder.selected').removeClass('selected');
+    
+    var holder = $('tagged-locations-' + tag_id);
+    if (!holder) {
+      holder = new Element('div', {
+        id: 'tagged-locations-' + tag_id,
+        'class': 'holder'
+      });
+      holder.inject($('directory').getElement('.slider'));
+      var list = new Element('ul');
+      list.inject(holder);
+      $$('#locations-all li').each(function(item) {
+	var a = item.getElement('a');
+	if (a) {
+	  var id = parseInt(a.get('data-id'));
+          if (active_locations[id]) {
+            var clone = item.clone();
+            clone.inject(list);
+            if (list.getElements('li').length == 12) {
+              list = new Element('ul');
+              list.inject(holder);
+            }
+          }
+	}
+      });
+    }
+    holder.addClass('selected');
+    var locationCount = holder.getElements('li').length;
+    var pages = Math.ceil(locationCount / 36);
+    $$('#directory .pagination a').each(function(link, index) {
+      if (index == 0) {
+        link.addClass('selected');
+      } else {
+        link.removeClass('selected');
+      }
+      if (index < pages && !(index == 0 && pages == 1)) {
+        link.removeClass('hidden');
+      } else {
+        link.addClass('hidden');
+      }
+    });
+    $('location-count').set('html', locationCount + ' locations');
+    $('directory').getElement('.slider').setStyle('left', 0);
+    updateMarkers(function(location) {
+      return active_locations[location.id] ? true : false;
+    });
+    closeMarker();
 
-     $$('#location_type a.selected').removeClass('selected');
-     $$('#directory .slider .holder.selected').removeClass('selected');
-
-     var holder = $('tagged-locations-' + tag_id);
-     if (!holder) {
-       holder = new Element('div', {
-         id: 'tagged-locations-' + tag_id,
-         'class': 'holder'
-       });
-       holder.inject($('directory').getElement('.slider'));
-       var list = new Element('ul');
-       list.inject(holder);
-       $$('#locations-all li').each(function(item) {
-	 var a = item.getElement('a');
-	 if (a) {
-	   var id = parseInt(a.get('data-id'));
-           if (active_locations[id]) {
-             var clone = item.clone();
-             clone.inject(list);
-             if (list.getElements('li').length == 12) {
-               list = new Element('ul');
-               list.inject(holder);
-             }
-           }
-	 }
-       });
-     }
-     holder.addClass('selected');
-     var locationCount = holder.getElements('li').length;
-     var pages = Math.ceil(locationCount / 36);
-     $$('#directory .pagination a').each(function(link, index) {
-       if (index == 0) {
-         link.addClass('selected');
-       } else {
-         link.removeClass('selected');
-       }
-       if (index < pages && !(index == 0 && pages == 1)) {
-         link.removeClass('hidden');
-       } else {
-         link.addClass('hidden');
-       }
-     });
-     $('location-count').set('html', locationCount + ' locations');
-     $('directory').getElement('.slider').setStyle('left', 0);
-     updateMarkers(function(location) {
-       return active_locations[location.id] ? true : false;
-     });
-     closeMarker();
-
-     var filter_name = "tag-select-" + tag_id;
-     var filter = $(filter_name);
-     if (!filter) {
-       filter = new Element('a', {
-	 href: "#/tag/" + tag_id,
-	 "data-id": tag_id,
-	 id: filter_name,
-	 html: tag_name
-       });
-       $("location_type").adopt(filter);
-     }
-     filter.addClass('selected');
-
-     resizeLocations();
-   }
+    var filter_name = "tag-select-" + tag_id;
+    var filter = $(filter_name);
+    if (!filter) {
+      filter = new Element('a', {
+	href: "#/tag/" + tag_id,
+	"data-id": tag_id,
+	id: filter_name,
+	html: tag_name
+      });
+      $("location_type").adopt(filter);
+    }
+    filter.addClass('selected');
+    
+    resizeLocations();
+  }
 
   function resizeLocations() {
     var locations = $('directory').getElement('.locations');
@@ -956,680 +937,82 @@ function showMapLocation(slug) {
     });
     $('locations-all').setStyle('width', totalWidth);
   }
-   
 
-pfhitDirectorySetup = function() {
+  initializeDirectoryPages = function() {
   
-  resizeLocations();
+    resizeLocations();
   
-  /*function directoryLocationClickHandler(e) {
-    e.stop();
-    var link = e.target;
-    var id = link.get('href').match(/location\d+/);
-    if (id && directory) {
-      var location = directory[id[0]];
-      if (location) {
-        location.openMarker();
-        scroll.toElement('map');
-      }
-    }
-  }*/
-  
-  /*$$('#directory .locations li a').each(function(link) {
-    link.addEvent('click', directoryLocationClickHandler);
-  });*/
-  
-  var slider = $('directory').getElement('.locations .slider');
-  slider.set('tween', {
-    duration: 750,
-    transition: Fx.Transitions.Quart.easeOut
-  });
-  $$('#directory .pagination a').each(function(link) {
-    link.addEvent('click', function(e) {
-      e.stop();
-      $$('#directory .pagination a.selected').removeClass('selected');
-      var page = link.get('href').match(/directory-page(\d)/);
-      if (page) {
-        var i = page[1].toInt() - 1;
-        slider.tween('left', i * -780);
-        link.addClass('selected');
-      }
+    var slider = $('directory').getElement('.locations .slider');
+    slider.set('tween', {
+      duration: 750,
+      transition: Fx.Transitions.Quart.easeOut
     });
-  });
-  
-  $$('#location_type a').each(function(link) {
-    link.addEvent('click', function(e) {
-      e.stop();
-      var type = link.get('data-type');
-      $$('#location_type a.selected').removeClass('selected');
-      link.addClass('selected');
-      $$('#directory .slider .holder.selected').removeClass('selected');
-      var holder = $('locations-' + type);
-      if (!holder) {
-        holder = new Element('div', {
-          id: 'locations-' + type,
-          'class': 'holder'
-        });
-        holder.inject($('directory').getElement('.slider'));
-        var list = new Element('ul');
-        list.inject(holder);
-        $$('#locations-all li').each(function(item) {
-          if (item.hasClass(type)) {
-            var clone = item.clone();
-            clone.inject(list);
-            //clone.getElement('a').addEvent('click', directoryLocationClickHandler);
-            if (list.getElements('li').length == 12) {
-              list = new Element('ul');
-              list.inject(holder);
-            }
-          }
-        });
-      }
-      holder.addClass('selected');
-      var locationCount = holder.getElements('li').length;
-      var pages = Math.ceil(locationCount / 36);
-      $$('#directory .pagination a').each(function(link, index) {
-        if (index == 0) {
+    $$('#directory .pagination a').each(function(link) {
+      link.addEvent('click', function(e) {
+        e.stop();
+        $$('#directory .pagination a.selected').removeClass('selected');
+        var page = link.get('href').match(/directory-page(\d)/);
+        if (page) {
+          var i = page[1].toInt() - 1;
+          slider.tween('left', i * -780);
           link.addClass('selected');
-        } else {
-          link.removeClass('selected');
-        }
-        if (index < pages && !(index == 0 && pages == 1)) {
-          link.removeClass('hidden');
-        } else {
-          link.addClass('hidden');
         }
       });
-      $('location-count').set('html', locationCount + ' locations');
-      $('directory').getElement('.slider').setStyle('left', 0);
-      updateMarkers();
-      closeMarker();
-      resizeLocations();
     });
-  });
-}
-  
-  </script>
-</section>
-<section id="videos">
-  <div class="background">
-    <div class="extent">
-      <div class="left-column">
-        <h2>Videos</h2>
-        <div class="menu">
-          <a href="#/videos/third-root-community-health-center" id="video-link-third-root-community-health-center" data-vimeo-url="http://vimeo.com/31042825" class="selected">Third Root Community Health Center</a>
-<a href="#/videos/food-cooperatives" id="video-link-food-cooperatives" data-vimeo-url="http://vimeo.com/29787733">Food Cooperatives</a>
-<a href="#/videos/participatory-budgeting-in-harlem" id="video-link-participatory-budgeting-in-harlem" data-vimeo-url="http://vimeo.com/31042431">Participatory Budgeting in Harlem</a>
-<a href="#/videos/ourgoods-barter-network" id="video-link-ourgoods-barter-network" data-vimeo-url="http://vimeo.com/31042328">OurGoods Barter Network</a>
-<a href="#/videos/les-peoples-credit-union" id="video-link-les-peoples-credit-union" data-vimeo-url="http://vimeo.com/31619169">LES People’s Credit Union</a>
-<a href="#/videos/ganas-intentional-community" id="video-link-ganas-intentional-community" data-vimeo-url="http://vimeo.com/31041294">Ganas Intentional Community</a>
-<a href="#/videos/shapes-of-exchange-in-the-solidarity-economy" id="video-link-shapes-of-exchange-in-the-solidarity-economy" data-vimeo-url="https://vimeo.com/81818864">Shapes of Exchange in the Solidarity Economy</a>
-          <a href="#/videos/about-the-video-series" id="video-link-about-the-video-series" data-id="about-the-video-series">About the video series</a>
-        </div>
-      </div>
-      <div class="right-column">
-        <div class="video"><iframe src="http://player.vimeo.com/video/31042825?portrait=0" width="760" height="427" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe></div>
-        <div class="clear"></div>
-        <div class="content">
-                      <div id="video-third-root-community-health-center" class="video-content selected">
-              <h2>Worker Cooperatives</h2>
-<h3>What’s the Goal?</h3>
-<p>Worker cooperatives seek to meet community needs and create livelihoods through businesses and organizations that are owned and democratically controlled by their workers.</p>
-<h3>How Do They Work?</h3>
-<p>Structured in many different ways, they are united by the principle of worker control via collective ownership and a democratic “one member, one vote” or consensus decision-making structure. Both risks and the profits are shared among worker-owners.</p>
-<h3>Successes</h3>
-<p>There are an estimated 500+ successful worker cooperatives in the U.S. Worker coops generally have higher rates of employee retention and workplace satisfaction than capitalist businesses. Some studies have also suggested that worker cooperatives have a slightly higher rate of success than other types of small businesses. You can find out more via the U.S. Federation of Worker Cooperatives, American Worker Cooperative, and the NYC Network of Worker Co-operatives.</p>
-            </div>
-                      <div id="video-food-cooperatives" class="video-content">
-              <h2>Consumer Cooperatives</h2>
-<h3>What’s the Goal?</h3>
-<p>Consumer Cooperatives are structures through which consumers democratically organize to purchase and distribute goods (such as food) and services among each other.</p>
-<h3>How Does It Work?</h3>
-<p>The business is owned by consumer-members who buy into the coop through membership fees and/or sweat equity and who benefit (in theory, if not always in practice) from lower prices and/or dividends from the business’ earnings. The coop is typically run by members elected to a Board of Directors and often by managers hired by that Board. Some consumer cooperatives are owned and run jointly by both the consumers and the workers. These coops seek to build democratic participation into every level of their operation, from the membership meeting to the stockroom.</p>
-<h3>Successes</h3>
-<p>There are thousands of consumer coops in the U.S.. Though cooperatively owned natural food stores are the most well known examples, housing coops, buying clubs, mutual insurance cooperatives and health care coops are all examples of cooperative consumer self-organization. You can find out more via the Food Co-op Initiative and the Park Slope Food Co-op.</p>
-            </div>
-                      <div id="video-participatory-budgeting-in-harlem" class="video-content">
-              <h2>Participatory Budgeting</h2>
-<h3>What’s the Goal?</h3>
-<p>The goal of participatory budgeting is to democratize the process of governmental budgeting.</p>
-<h3>How Does It Work?</h3>
-<p>Participatory budgeting can occur in three different stages. The public and various civic groups are included in a) analysis and formulation of budgetary priorities, b) monitoring budgetary expenditures and making sure that they are consistent with the budgetary priorities and c) monitoring the delivery of public services. This process attempts to create a space for greater democratic participation throughout the budgeting process.</p>
-<h3>Successes</h3>
-<p>The most prominent success of Participatory Budgeting has been in Porto Alegre, Brazil, adopted while under the control of the Worker’s Party (PT). Various other forms of Participatory Budgeting have been implemented in Canada, India, Ireland, Uganda the United States and South Africa, often at a municipal level. You can learn more via the Participatory Budgeting Project.</p>
-            </div>
-                      <div id="video-ourgoods-barter-network" class="video-content">
-              <h2>Barter Clubs</h2>
-<h3>What’s the Goal?</h3>
-<p>Barter Clubs are organized groups that facilitate the direct exchange of goods and services between people. People meet up and trade things without using money. Community-based barter clubs are not about haggling or just getting a deal. Most small-scale barter clubs are about relationships and mutual aid: the voluntary reciprocal exchange of resources and services for mutual benefit.</p>
-<h3>How Does It Work?</h3>
-<p>The simplest way to start a barter club is to make a list of “goods/services offered” and a list of “goods/services needed.” You can start a clothing, food, or other good/service swap event really easily! The group ClothingSwap.com offers tips.</p>
-<p>At the most elaborate and large­scale end are nationally­ linked institutions such as the barter markets (clubes de trueque) that have emerged in Argentina since the 2001 financial crisis. In these markets,­­ of which there are more than 100 throughout the country­­, people exchange a huge array of goods and services using an in­ house “barter currency” as a kind of IOU that circulates as a medium of exchange. In the absence of a viable national money system, these barter clubs have been essential for the survival of many thousands of struggling families.</p>
-<h3>Successes</h3>
-<p>In New York City alone, there are many barter clubs: OurGoods.org (a resource sharing site for artists and activists), BK Swappers (a Brooklyn-based homemade foodie swap), and the Rock Dove Collective (a radical community health exchange network). By identifying the skills and assets that are valuable to other members (like local produce, fresh meals, learning, childcare, and artwork), barter clubs honor motivations other than competition and profit-making and build local relationships of mutual aid, trust, and interdependence.</p>
-            </div>
-                      <div id="video-les-peoples-credit-union" class="video-content">
-              <h2>Credit Unions</h2>
-<h3>What’s the Goal?</h3>
-<p>Created to provide access to credit and financial services on the part of under-served communities, credit unions are member-owned, member-controlled, not-for-profit organizations.</p>
-<h3>How Do They Work?</h3>
-<p>Though many of them try very hard to look just like capitalist banks, they are fundamentally different in their operation. Capitalist banks exist to make a profit from the money they borrow and lend, funneling this profit to owners and investors. Credit Unions, on the other hand, exist only to serve their member-owners. Profits generated from credit union activities are returned to the organization to enhance or support services for the membership.</p>
-<h3>Successes</h3>
-<p>Like any “democratic” institution credit unions are only as good as their membership makes them. Credit unions without an organized progressive membership fall short of their potential. Credit unions with such an active membership (such as the Santa Cruz Community Credit Union in CA) can provide tremendous resources for community development and social justice efforts. You can learn more via the National Federation of Community Development Credit Unions.</p>
-            </div>
-                      <div id="video-ganas-intentional-community" class="video-content">
-              <h2>Intentional Communities</h2>
-<h3>What’s the Goal?</h3>
-<p>Like-minded people form intentional communities in order to live and work together in cooperation for shared goals. They collectively own the properties they use for their living and working.</p>
-<h3>How Does It Work?</h3>
-<p>Intentional Communities have, for many centuries, been places where idealists have come together to create a better world. Communities come in all shapes and sizes, and share many similar challenges — such as defining membership, succeeding financially, distributing resources, making decisions, raising children, dividing work equitably, and choosing a standard of living. Many wrestle with questions about right livelihood, spiritual expression, land use, and the role of service in our lives. Virtually all communities share a common root value of cooperation.</p>
-<h3>Successes</h3>
-<p>Although there are thousands of intentional communities in existence today, and many others in the formative stages, many people are unaware of them or the roots from which they spring. For comprehensive information, check out the Fellowship for Intentional Community.</p>
-            </div>
-                      <div id="video-shapes-of-exchange-in-the-solidarity-economy" class="video-content">
-              <p>The solidarity economy meets human needs through economic activities–like the production and exchange of goods and services–that reinforce values of justice, ecological sustainability, cooperation, and democracy. This animated short explains what the solidarity economy framework is and how housing co-ops and community land trusts, worker co-ops, community supported agriculture, and credit unions help to meet everyone&#8217;s needs within it.</p>
-            </div>
-                    <div id="video-about-the-video-series" class="video-content">
-            <h2>Portraits of the Solidarity Economy</h2>
-<p>Wondering what kinds of businesses and organizations are part of New York City’s solidarity economy? SolidarityNYC recently finished a series of short films, <strong>Portraits of the Solidarity Economy</strong>, featuring the stories of solidarity economy leaders and the projects they serve.</p>
-<p><strong>Want to learn more? Watch the short films below or wait for our DVD! </strong> Also, make sure to take a peak below each film for descriptions of the solidarity economics practices they represent.</p>
-<p>Thank you to everyone who helped make the films that are a part of <a href="#/projects/short-films">Portraits of the Solidarity Economy</a> possible. Solidarity economy leaders, filmmakers and editors, graphic designers, and all of those whose work we build upon in our efforts to create a system that honors life over profit, with a special thanks to our <a href="http://www.kickstarter.com/projects/caroline/portraits-of-the-solidarity-economy">Kickstarter</a> backers:</p>
-<ul class="thirds">
-<li>Ali Issa</li>
-<li>Amber Grayson</li>
-<li>Amber Landgraff</li>
-<li>Amelia</li>
-<li>anarchival</li>
-<li>Anita Vargas</li>
-<li>Anna Naomi Larson</li>
-<li>Annie McShiras</li>
-<li>Audric</li>
-<li>Barrie Cline</li>
-<li>Ben Collins</li>
-<li>brendan meagher</li>
-<li>Briana Carp</li>
-<li>Camille Gage</li>
-<li>Christian David Flores-Carignan</li>
-<li>Claire Adams</li>
-<li>Craig Borowiak</li>
-<li>crisra13</li>
-<li>Dan Apfel</li>
-<li>David Schweickart</li>
-<li>Douglas Rushkoff</li>
-<li>Dru Oja Jay</li>
-<li>Dustin Sharpless</li>
-<li>Elisabeth Holm</li>
-<li>Elizabeth T. Jones</li>
-<li>Elke Lerman</li>
-<li>Emily Kawano</li>
-<li>Enrico Massetti</li>
-<li>Eric Brelsford</li>
-<li>Erik Schurink</li>
-<li>Erin Sickler</li>
-<li>Ethan Miller</li>
-<li>Evan Casper-Futterman</li>
-<li>Faustina Smith</li>
-<li>Fielding Dupuy</li>
-</ul>
-<ul class="thirds">
-<li>Frances</li>
-<li>Gabrielle Greenberg</li>
-<li>Henri Laupmaa</li>
-<li>Herbie Huff</li>
-<li>Hope Ginsburg</li>
-<li>Ieneke van Houten</li>
-<li>Jay</li>
-<li>Jay Cassano</li>
-<li>Jay Milnes</li>
-<li>Jenna Peyser</li>
-<li>Jenny Montasir</li>
-<li>Jeremy Friedman</li>
-<li>JK + JS</li>
-<li>Joe Rinehart</li>
-<li>John Collins</li>
-<li>Julie Matthaei</li>
-<li>Junius Stone</li>
-<li>K Lins</li>
-<li>Kakee Scott</li>
-<li>kate cahill</li>
-<li>Katie Spillane</li>
-<li>Kent Zabladowski</li>
-<li>Laura</li>
-<li>Laura Miller</li>
-<li>Laura Cline</li>
-<li>Laurie Simons</li>
-<li>len krimerman</li>
-<li>Lourdes</li>
-<li>Lydia Grey</li>
-<li>lydia matthews</li>
-<li>Lydia Pelot-Hobbs</li>
-<li>M. K.Mitchiner</li>
-<li>Margaret Lund</li>
-<li>Mariana Gaston</li>
-<li>Marnie Thompson</li>
-<li>martin b</li>
-</ul>
-<ul class="thirds">
-<li>Max Liboiron</li>
-<li>Meerkat Media Collective</li>
-<li>Megan Snowe</li>
-<li>Melanie</li>
-<li>Micah</li>
-<li>Michael Binder</li>
-<li>Michael Margolis</li>
-<li>Michelle Foster</li>
-<li>Michelle Levy</li>
-<li>Molly</li>
-<li>mraeryceos</li>
-<li>Nancy D. Sheehan-Becker</li>
-<li>New Economics Institute</li>
-<li>Noelle Marcus</li>
-<li>Pascale Gatzen</li>
-<li>Patricio Diaz</li>
-<li>Paul Coughlan</li>
-<li>Peter Walsh</li>
-<li>Phil Rosenbloom</li>
-<li>pkatze</li>
-<li>Rafael O. Morales</li>
-<li>rebecca</li>
-<li>Rebecca Weiss</li>
-<li>Rena</li>
-<li>rHenri</li>
-<li>Sarah Workneh</li>
-<li>Shari Diamond</li>
-<li>sheree schafer</li>
-<li>Stephanie Johnstone</li>
-<li>Stephanie Pereira</li>
-<li>Stephen Healy</li>
-<li>susan jahoda</li>
-<li>Vanessa Arcara</li>
-<li>Walker Tufts</li>
-<li>William Miller</li>
-</ul>
-<div class="clear"></div>
-          </div>
-        </div>
-      </div>
-      <div class="clear"></div>
-    </div>
-  </div>
-  <script>
-  
-  function playVideo(id) {
-    var link = $('video-link-' + id);
-    if (link.hasClass('selected')) {
-      return;
-    }
-    $$('#videos .content .selected').removeClass('selected');
-    $$('#videos .menu a.selected').removeClass('selected');
-    link.addClass('selected');
-    $('video-' + id).addClass('selected');
-    var vimeoUrl = link.get('data-vimeo-url');
-    var iframe = $('videos').getElement('.video iframe');
-    if (vimeoUrl) {
-      var vimeoId = vimeoUrl.match(/vimeo.com\/(\d+)/);
-      if (vimeoId) {
-        var url = "http://player.vimeo.com/video/" + vimeoId[1] + "?portrait=0&autoplay=1";
-        iframe.removeClass('hidden');
-        iframe.src = url;
-      }
-    } else {
-      iframe.src = 'about:blank';
-      iframe.addClass('hidden');
-    }
+    
+    $$('#location_type a').each(function(link) {
+      link.addEvent('click', function(e) {
+        e.stop();
+        var type = link.get('data-type');
+        $$('#location_type a.selected').removeClass('selected');
+        link.addClass('selected');
+        $$('#directory .slider .holder.selected').removeClass('selected');
+        var holder = $('locations-' + type);
+        if (!holder) {
+          holder = new Element('div', {
+            id: 'locations-' + type,
+            'class': 'holder'
+          });
+          holder.inject($('directory').getElement('.slider'));
+          var list = new Element('ul');
+          list.inject(holder);
+          $$('#locations-all li').each(function(item) {
+            if (item.hasClass(type)) {
+              var clone = item.clone();
+              clone.inject(list);
+              if (list.getElements('li').length == 12) {
+                list = new Element('ul');
+                list.inject(holder);
+              }
+            }
+          });
+        }
+        holder.addClass('selected');
+        var locationCount = holder.getElements('li').length;
+        var pages = Math.ceil(locationCount / 36);
+        $$('#directory .pagination a').each(function(link, index) {
+          if (index == 0) {
+            link.addClass('selected');
+          } else {
+            link.removeClass('selected');
+          }
+          if (index < pages && !(index == 0 && pages == 1)) {
+            link.removeClass('hidden');
+          } else {
+            link.addClass('hidden');
+          }
+        });
+        $('location-count').set('html', locationCount + ' locations');
+        $('directory').getElement('.slider').setStyle('left', 0);
+        updateMarkers();
+        closeMarker();
+        resizeLocations();
+      });
+    });
   }
-  
+
   </script>
 </section>
-<section id="resources">
-  <div class="background">
-    <div class="extent">
-      <div class="left-column">
-        <h2>Resources</h2>
-            <ul class="subpages">
-                      <li id="subpage-the-basics"  class="selected"><a href="#/resources/the-basics">The Basics</a></li>
-                      <li id="subpage-resource-library" ><a href="#/resources/resource-library">Resource Library</a></li>
-                      <li id="subpage-take-action-move-your-money" ><a href="#/resources/take-action-move-your-money">Take Action: Move Your Money</a></li>
-          </ul>
-          </div>
-      <div class="right-column">
-        <div class="viewer">
-          <div class="slider">
-              <div id="page-the-basics" class="page">
-    <div class="main-content">
-      <h2>The solidarity economy includes a wide array of economic practices and initiatives but they all share common values that stand in stark contrast to the values of the dominant economy.</h2>
-<p>Instead of enforcing a culture of cut-throat competition, they build cultures and communities of cooperation. Rather than isolating us from one another, they foster relationships of mutual support and solidarity. In place of centralized structures of control, they move us towards shared responsibility and democratic decision-making. Instead of imposing a single global monoculture, they strengthen the diversity of local cultures and environments. Instead of prioritizing profit over all else, they encourage a commitment to shared humanity best expressed in social, economic, and environmental justice.</p>
-<p>&nbsp;</p>
-<p><a href="#/resources/the-basics/economyegg_web-3/" rel="attachment wp-att-443"><img class="alignnone size-large wp-image-443" title="economyegg_web" alt="" src="wp-content/uploads/2012/10/economyegg_web2-730x507.jpg" width="730" height="507" /></a></p>
-<dl class="wp-caption alignnone" id="attachment_422" style="width: 740px;">
-<dt class="wp-caption-dt"></dt>
-<dd class="wp-caption-dd">Click to view the diagram at full size.</dd>
-</dl>
-<p>&nbsp;</p>
-<p>The New York City solidarity economy includes many, if not all, of the practices listed above plus some we haven’t even discovered yet! While it rarely turns up in the news, New Yorkers are using solidarity practices to create jobs, produce food, house their families, educate themselves, entertain their communities, access healthcare, and restore the environment.  In fact, many have been doing so for generations. The solidarity economy isn’t a far off utopia, but is instead a force already changing lives in our communities.</p>
-<p>Want to learn how you can support New York’s alternative economy? Visit <a title="Directory" href="#/directory/">our directory</a> of New York’s solidarity economy. Did we miss something? Let us know at info (at) solidaritynyc (dot) org.</p>
-<p>Want to learn more about the solidarity economy concept? Check out our <a title="Resource Library" href="#/resources/resource-library/">resource library</a> or the <a href="http://www.ussen.org/">U.S. Solidarity Economy Network</a> for papers, books, and additional resources.</p>
-<p><em>Special thanks to Ethan Miller for generously donating his words.</em></p>
-    </div>
-    <div class="clear"></div>
-  </div>
-    <div id="page-resource-library" class="page">
-    <div class="main-content">
-      <h2>Want to learn more about the solidarity economy concept? Here are a few of our favorite resources.</h2>
-<h3>Reports</h3>
-<p><a href="http://solidaritynyc.org/wp-content/uploads/2013/02/Growing-A-Resilient-City-SolidarityNYC-Report.pdf">Growing a Resilient City: Possibilities for Collaboration in New York City&#8217;s Solidarity Economy</a>, <em>released 2/2013</em></p>
-<p><a href="http://solidaritynyc.org/wp-content/uploads/2012/09/CEANYC-Final-Report.pdf">Cooperative Economics Alliance of New York City Summary of Findings</a>, <em>released 4/2014</em></p>
-<h3>Print Material About Us</h3>
-<p>Pamphlet for Organizers<br />
-<a href="http://solidaritynyc.org/wp-content/uploads/2011/09/SolidarityNYC-Pamphlet.pdf">Download the PDF, <em>2 pages</em></a></p>
-<p>Poster for Creatives<br />
-<a href="http://solidaritynyc.org/wp-content/uploads/2011/09/SolidarityNYC-Poster.pdf">Download the PDF, <em>11×17 in.</em></a></p>
-<h3>Workshops</h3>
-<p>Solidarity, Justice, Cooperation, oh my! Economics For the Rest of Us</p>
-<p><a href="http://solidaritynyc.org/wp-content/uploads/2012/03/Economics-For-the-Rest-of-Us-Curriculum.pdf">Download the Curriculum PDF</a></p>
-<p><a href="http://www.mediafire.com/?sr6cj4wlmjj6dcc">Download the PowerPoint presentation</a></p>
-<p><a href="http://www.mediafire.com/?suw2cfcfg9nwojh">Download the PowerPoint slides in PDF</a></p>
-<h3>Books and Articles</h3>
-<p><a href="http://www.google.com/url?sa=t&amp;source=web&amp;cd=4&amp;ved=0CCoQFjAD&amp;url=http%3A%2F%2Fwww.communityeconomies.org%2Fsite%2Fassets%2Fmedia%2FEthan_Miller%2FMiller_Other%2520Economies%2520Are%2520Possible%2520%282006%29.pdf&amp;rct=j&amp;q=ethan%20miller%20community%20economies%20collective%20other%20economies%20are%20possible&amp;ei=dsolTsSuFsnV0QGc1d3rCg&amp;usg=AFQjCNHC5w_Zo6tlox5m6i_-H6IBvE2E8Q&amp;sig2=fYMICswaytlv0sD9Z6mRTQ&amp;cad=rja">Other Economies Are Possible</a> by Ethan Miller</p>
-<p><a href="http://montreal.mediacoop.ca/story/occupy-workplace-democracy-part-i/10077">Cooperating to Replace Capitalism (Part One)</a> by Dru Oja Jay</p>
-<p><a href="http://montreal.mediacoop.ca/story/occupy-workplace-democracy/10153 ">Cooperating to Replace Capitalism (Part Two)</a> by Dru Oja Jay</p>
-<p><a href="http://geo.coop/node/719">Occupy! Connect! Create!</a> by Ethan Miller</p>
-<p><a href="http://www.organizingupgrade.com/index.php/strategylabs/occupy-strategylab/item/38-towards-an-economy-worth-occupying">Towards an Economy Worth Occupying</a> by Cheyenna Weber</p>
-<p><a href="http://www.geo.coop/node/15">A Solidarity Economy: An Overview and Some Definitions</a> by Julie Matthaei and Jenna Allred</p>
-<p><a href="http://www.communityeconomies.org/people/Ethan-Miller">Solidarity Economies: Key Concepts and Issues </a>by Ethan Miller</p>
-<p><a href="http://www.communityeconomies.org/people/JK-Gibson-Graham">An Ethics of the Local</a> by J.K. Gibson-Graham</p>
-<p><a href="http://www.lulu.com/product/paperback/solidarity-economy-i-building-alternatives-for-people-and-planet/11379276">Solidarity Economy I: Building Alternatives for People and Planet</a> by Emily Kawano, Thomas-Neal Masterson, and Jonathan Teller-Elsberg</p>
-<p><a href="http://www.yesmagazine.org/new-economy/building-a-solidarity-economy">Building a Solidarity Economy </a>by Annie McShiras</p>
-<p><a href="http://www.shareable.net/blog/sharing-power-building-a-solidarity-economy">Sharing Power: Building a Solidarity Economy</a> by Cheyenna Weber and Caroline Woolard</p>
-<p>A <a href="https://www.haverford.edu/politicalscience/solidarityeconomy/resources/overview/bibliography.php">useful bibliography</a> by Craig Borowiak</p>
-<p><a href="http://www.akpress.org/opposeandpropose.html" target="_blank">Oppose and Propose</a> by Andy Cornell</p>
-<p>&nbsp;</p>
-<h3>Related Organizations</h3>
-<p><a href="http://www.aortacollective.org/">AORTA Collective</a></p>
-<p><a href="http://www.communityeconomies.org/Home">Community Economies Collective</a></p>
-<p><a href="http://datacommons.find.coop/">Data Commons Cooperative</a></p>
-<p><a href="http://www.geo.coop/">Grassroots Economic Organizing (GEO) Collective</a></p>
-<p><a href="http://www.onthecommons.org/">On the Commons</a></p>
-<p><a href="http://www.ourgoods.org/">Our Goods.org</a></p>
-<p><a href="http://www.shareable.net/">Shareable.net</a></p>
-<p><a href="http://www.ussen.org/">U.S. Solidarity Economy Network</a></p>
-<p><a href="http://www.worcestersagealliance.org/">Worcester SAGE</a></p>
-<h3>Media</h3>
-<p><a href="http://www.pbs.org/now/fixing-the-future/index.html">PBS Special: Fixing the Future video on local economies</a></p>
-<p><a href="http://www.ted.com/talks/lang/eng/geoff_mulgan_post_crash_investing_in_a_better_world_1.html">TED talk: Investing in a Better World</a> by Geoff Mulgan</p>
-<p><a href="http://flashforwardserie.com/video/wXVZsNuShM8/Solidarity-Economy.html;">Solidarity Economy Panel at Left Forum 2011</a></p>
-<p><a href="http://www.youtube.com/watch?v=N9z-DYaOhP0&amp;feature=player_embedded">Worker Cooperatives in NYC Video</a></p>
-<p><a href="http://www.ted.com/talks/lang/eng/brene_brown_on_vulnerability.html">TEDxHouston talk: Power of Vulnerability</a> by Brene Brown</p>
-<p><a href="https://www.youtube.com/watch?v=EpsZw6vsH4A">Highlights from Collective Courage: A Conversation on Cooperation in African American Communities</a> with Farah Tanis (Black Women&#8217;s Blueprint), Dr. Jessica Gordon Nembhard (professor John Jay College and author of Collective Courage), and Esteban Kelley (AORTA Collective) courtesy of GritTV.</p>
-<h3>Occupy Workplace Democracy</h3>
-<p>Occupy Workplace Democracy was an educational event held 1/8/12 for emerging Occupy Wall Street Worker Cooperatives. Each of the resources listed here pertain specifically to member-started worker cooperatives.</p>
-<p><em>Workshop Presentation and Worker-owner panel:</em></p>
-<p><a href="http://solidaritynyc.org/wp-content/uploads/2012/01/Occupy_Workplace_Democracy.pdf">Nuts and Bolts Workshop</a> presentation by Joe Marraffino and Aaron Dawson of the Democracy At Work Network</p>
-<p><a href="http://solidaritynyc.org/wp-content/uploads/2012/01/OWS-brief-presentation-1.8.12.pdf">Meso-level Cooperation and OWS</a> presentation by Adam Trott of Collective Copies and the Valley Alliance for Worker Cooperatives</p>
-<h3>Additional Materials</h3>
-<p><a href="http://solidaritynyc.org/wp-content/uploads/2012/01/Urban-Justice-Center-CDP-Transactional-Legal-Services.pdf">Urban Justice Center Community Development Project Legal Services</a> flyer</p>
-<p><a href="http://www.nycworker.coop/NYCNoWCServiceProviders.pdf">New York City Network of Worker Cooperatives Service Providers</a> flyer</p>
-<p><a href="http://ncdf.coop/Toolboxes.html">Worker Cooperative Toolbox</a> – In Good Company: The Guide to Cooperative Employee Ownership</p>
-<p><a href="https://public.me.com/starspeed">Equal Exchange Worker Ownership</a> manual</p>
-    </div>
-    <div class="clear"></div>
-  </div>
-    <div id="page-take-action-move-your-money" class="page">
-    <div class="main-content">
-      <p><strong>Move Your Money!</strong></p>
-<p>While many people are inspired to move their money out of corporate banks, not everyone is really sure what to do with it. You can’t hide it under a mattress, of course. Credit unions can be confusing and many banks aren’t exactly forthcoming about their practices. Here’s what you need to know:</p>
-<p><strong>Credit Unions:</strong></p>
-<p>Credit unions are cooperative financial institutions that offer many (if not all) of the same services you would get at a regular bank. The difference is that when you open an account you become a MEMBER and an OWNER. That means it’s up to all of those banking there to keep the organization accountable. Of course, you can just open an account and forget about it, but if you choose to get involved you can join a committee or run for the democratically elected Board of Directors. Whereas banks have SHAREHOLDERS (outside investors to whom they are accountable), credit unions have MEMBERS. Your money is backed by the same Federal guarantee as a bank, but instead of FDIC it’s through NCUA (http://www.ncua.gov/). You’re covered and it’s all good. They also tend to have an advantage in terms of interest rates in savings accounts or loans, because their interest is to benefit YOU and the other members, not the shareholders. Many also offer a wide range of great, free financial classes and management tools in terms of your personal banking and using that specific credit union.</p>
-<p>Credit unions also focus on specific communities. They have strict limitations on who they can serve. This is where it can get difficult for some people to find a credit union to join. You must be within the <strong>field of membership </strong>in order to qualify for membership. It is specific to each institution. One way to think of it is this: you’re joining a community when you open an account. It is very difficult for credit unions to expand their fields of membership–the banks are interested in keeping them small so they don’t threaten their profits, so a lot of lobbying goes on–hence why there isn’t a national credit union we can all run and join right now. Look into field of membership requirements to see if you can join.</p>
-<p>Credit unions are not all perfect just because they’re cooperative. Some may not be able to meet all of your needs. Check out the services they make available. Don’t get angry with them if they can’t meet your every expectation. They do not have the resources of the corporate banks. Expect it to be a different experience, be open-minded, and consider opening a savings account at a credit union if they can’t meet your needs for a checking account. Seriously. It’s also worth noting most credit unions are actually part of a national credit union network. (They have a website and app too, so it’s easy to find out which ones.) This network allows you to deposit or withdraw money at any of the participating Credit Union’s branches/ATMs basically like it was your own. It will go straight into or out of your account no problem.</p>
-<p>Last, Community Development Credit Unions (CDCUs) are focused on investing in communities which have been marginalized. You may already know that banks used to circle whole areas of city maps, in a process called red-lining, and then refuse to make loans to those areas. You won’t be surprised to learn the people in those areas were often people of color, immigrants, or low-income. Many of those neighborhoods are without banking services—people have to go MILES outside of their community in order to access a bank account. To address this, and to begin to develop economic security in those areas, CDCUS were formed and continue to fill the gap.<strong>If you qualify to put your money in a CDCU you will be able to do the most good with it. </strong>No question. That’s the best choice. You can find a list of them for every state here: http://www.cdcu.coop/i4a/pages/index.cfm?pageid=1530</p>
-<p>&nbsp;</p>
-<p><strong>Banks:</strong></p>
-<p>Not every bank is evil just because it has shareholders. Some do great things within this framework. They also are often able to offer additional services than credit unions, so they may be better suited to your needs. They fall into a few categories.</p>
-<p>Some, like the labor bank Amalgamated, were formed to meet the needs of a specific community (in this case that of union members.) They offer free ATMs in every Duane Reade AND they are actively challenging corporate behavior as shareholders. There is a whole wing of Amalgamated devoted to shareholder advocacy, which means they push corporations on workers rights, among other issues.</p>
-<p>Similarly, there are online banks like New Resource Bank, which is focused on environmental issues. There are more–you just gotta dig a bit.</p>
-<p>There are also community development banks–which like CDCUs focus on low-moderate income community economic development. This <a href="http://en.wikipedia.org/wiki/Community_development_bank">Wikipedia article </a>explains them well, and gives a few examples: .  The most famous one was Shorebank, which had successfully generated capital for a number of projects, but it closed last year. You might look into these options.</p>
-<p>Other banks are small–like community banks in rural areas–but they can easily be bought by corporate banks. If you don’t want to have to move your money twice it is best to avoid them.</p>
-<p><strong>Go move your money!</strong></p>
-    </div>
-    <div class="clear"></div>
-  </div>
-              <div class="clear"></div>
-          </div>
-        </div>
-        <div class="clear"></div>
-      </div>
-      <div class="clear"></div>
-    </div>
-  </div>
-  <script>
-  
-  var sectionId = 'resources';
-  var sectionWidth = 0;
-  $$('#' + sectionId + ' .page').each(function(page) {
-    sectionWidth += page.getSize().x;
-  });
-  $(sectionId).getElement('.slider').setStyle('width', sectionWidth);
-  
-  $$('#' + sectionId + ' .subpages a').each(function(link, index) {
-    var id = 'page-' + link.get('href').match(/\/([^\/]+)$/)[1];
-    if (index == 0) {
-      updateViewerHeight($(id), true);
-    }
-    var pos = $(id).getPosition($(id).getParent('.viewer'));
-    $(id).store('position', -pos.x);
-  });
-  
-  </script>
-</section>
-<section id="about" class="alt">
-  <div class="background">
-    <div class="extent">
-      <div class="left-column">
-        <h2>About</h2>
-            <ul class="subpages">
-                      <li id="subpage-solidaritynyc"  class="selected"><a href="#/about/solidaritynyc">SolidarityNYC</a></li>
-                      <li id="subpage-who-we-are" ><a href="#/about/who-we-are">Who We Are</a></li>
-                      <li id="subpage-project-areas" ><a href="#/about/project-areas">Project Areas</a></li>
-                      <li id="subpage-contact-us" ><a href="#/about/contact-us">Contact Us</a></li>
-                      <li id="subpage-press" ><a href="#/about/press">Press</a></li>
-          </ul>
-          </div>
-      <div class="right-column">
-        <div class="viewer">
-          <div class="slider">
-              <div id="page-solidaritynyc" class="page">
-    <div class="main-content">
-      <h2>SolidarityNYC connects, supports, and promotes New York City’s solidarity economy.</h2>
-<p><img class="alignright size-full wp-image-429" src="wp-content/uploads/2012/10/flower2.jpg" alt="Flower" width="365" height="274" /></p>
-<p dir="ltr"><span style="font-size: 13px;"><span style="color: #222222;">We&#8217;re a collective of organizers and academics who promote, connect, and support New York City’s solidarity economy. Solidarity economy practices utilize values of justice, democracy, cooperation, and mutualism to meet community needs. Our collective renders these practices visible, through mapping and filmmaking, and brings the sectors of the solidarity economy into greater cooperation with each other for enhanced economic and political power through education, organizing, and research. </span></span></p>
-<p dir="ltr"><span style="font-size: 13px;">Our vision is a vibrant and growing movement to provide greater economic security, improved health, and increased democracy for our communities.</span></p>
-<h3 dir="ltr"></h3>
-<h3 dir="ltr">We hope to:</h3>
-<p>1. Make the strong solidarity economy practices that already exist in New York City visible. (Check out our map and our films.)</p>
-<p dir="ltr">2. Bring the various sectors of the solidarity economy into conversation with each other for collaboration and mutual benefit. We want to build both economic and political power.</p>
-<p dir="ltr">3. Grow the solidarity economy by driving more traffic into existing initiatives while inspiring and supporting the development of new ones.</p>
-<p dir="ltr">4. Create democratic and cooperative cultures to replace those of competition and hierarchy which characterize corporate capitalism. It isn’t enough to just have a “green” business or “social” enterprise–we have to radically change the way we relate to each other and the purpose of economic activity.</p>
-<p dir="ltr">5. Bridge gaps between social justice grassroots economic community development movements. Contact us at info (at) solidaritynyc (dot) org.</p>
-<p>&nbsp;</p>
-    </div>
-    <div class="clear"></div>
-  </div>
-    <div id="page-who-we-are" class="page">
-    <div class="main-content">
-      <h2>The SolidarityNYC Project is collectively directed by a committed group of activists, artists, and community members.</h2>
-<p dir="ltr">We are fiscally sponsored by the Sustainable Markets Foundation. Our members also participate as staff or board members in the following solidarity economy organizations:  Community Economies Collective, Data Commons Cooperative, GEO (Grassroots Economic Organizing) Collective, Lower East Side People’s Federal Credit Union, Meerkat Media Collective, National Federation of Community Development Credit Unions,  and the U.S. Solidarity Economy Network. We include:</p>
-<p><strong>Ben Blackshear</strong>, <em>research, mapping, &amp; community building</em><br />
-<strong>Cheyenna Layne Weber</strong><em>, organizing &amp; community building</em><br />
-<strong>Evan Casper-Futterman, </strong><em>research, policy, &amp; media-making</em><br />
-<strong>Jessie Reilly,</strong><em> cooperative exchange &amp; public education</em><br />
-<strong>Lauren Taylor Hudson,</strong> <em>mapping &amp; research</em><br />
-<strong>Michael Johnson</strong>, <em>cooperative leadership education</em><br />
-<strong>Olivia Geiger</strong>, <em>research &amp; community building</em><br />
-<strong>Zara Serabian-Arthur,</strong><em> research, mediamaking, &amp; collaborative practice</em></p>
-<p>Emeritus members: Annie McShiras, Amelia Bryne, Caroline Woolard, Daniel Apfel, K. Kenneth Edusei</p>
-<p>Contact us at info (at) solidaritynyc (dot) org.</p>
-    </div>
-    <div class="clear"></div>
-  </div>
-    <div id="page-project-areas" class="page">
-    <div class="main-content">
-      <h2 dir="ltr">SolidarityNYC seeks to support, connect, and promote our solidarity economy through mapping, research, organizing, and education.</h2>
-<h3 dir="ltr">Mapping</h3>
-<p dir="ltr">One of the primary difficulties in raising awareness and support for the solidarity economy lies in its invisibility. While New Yorkers have been engaged in solidarity economic practices and relationships since long before the region was known as New York, many of these practices are submerged within the dominant capitalist economy or simply aren’t commercialized or marketed. Our goal is to lift up these practices by creating a NYC solidarity economy map to provide practical information about businesses and initiatives in our communities.  Our map is both conceptual and practical&#8211; you can use it to find local produce or housing collectives in your community or to learn more about the ways solidarity economics operate in your own life. Making these practices and models visible and understood is an important  step towards encouraging policies to support solidarity economy efforts across the five boroughs.</p>
-<h3 dir="ltr">Research  and Organizing</h3>
-<p dir="ltr">While there are many organizations and businesses that comprise the solidarity economy they are without a shared vehicle for engaging community members and policymakers. (Compare this to the many corporate associations and networks organized to lobby our municipal, state, and federal government.) SolidarityNYC addresses this gap by conducting participatory research to assess the needs and goals of the groups that comprise NYC’s solidarity economy. Our hope is to bring together a diverse group of representatives to form a democratic body to lend a collective voice to our many disparate efforts.</p>
-<h3 dir="ltr">Education</h3>
-<p>Most of us grow up within educational systems that assume our current dominant economy is a fundamental truth which cannot be altered. The consensus within our culture is all too often “it isn’t perfect, but it’s the best we’ve got.” The reality is our economic relationships are much more complex than those which register on GDP reports or consumer indexes. SolidarityNYC is committed to providing educational programs and resources that challenge prevailing assumptions and demonstrate that alternative economic practices are available to us all. We also partner with allies to present programs focused on specific practices or skills necessary to a viable solidarity economy, such as how to establish a worker cooperative or how to create a democratic culture within an organization. If you are interested in a workshop, training, or presentation on the solidarity economy or a related topic please email us at info (at) solidaritynyc (dot) org.</p>
-    </div>
-    <div class="clear"></div>
-  </div>
-    <div id="page-contact-us" class="page">
-    <div class="main-content">
-      <p>We can be reached at info (at) solidaritynyc (dot) org. We&#8217;re always happy to discuss possible collaboration!</p>
-<p>You can also follow us on <a href="https://www.facebook.com/SolidarityNYC">Facebook</a> and <a href="https://twitter.com/SolidarityNYC">Twitter</a>.</p>
-    </div>
-    <div class="clear"></div>
-  </div>
-    <div id="page-press" class="page">
-    <div class="main-content">
-      <p><strong>Articles/ Interviews</strong></p>
-<p><a href="http://www.shareable.net/blog/making-the-solidarity-economy-a-movement-in-nyc" target="_blank">&#8220;Making the Solidarity Economy a Movement in NYC&#8221;</a> from Shareable</p>
-<p><a href="http://www.shareable.net/blog/how-to-map-the-new-economy" target="_blank">&#8220;How to Map the New Economy&#8221;</a> from Shareable</p>
-<p><a href="http://www.fastcoexist.com/3019124/mapping-the-new-solidarity-economy-of-new-york-city" target="_blank">&#8220;Mapping the New &#8216;Solidarity Economy&#8217; in New York City&#8221;</a> from Fast Company</p>
-<p><a href="http://www.geo.coop/story/night-solidarity-and-resilience-new-york-city" target="_blank">&#8220;A Night of Solidarity and Resistance in New York City&#8221;</a> from Grassroots Economic Organizing (GEO)</p>
-<p><a href="http://www.ubraintv.com/watch.php?id=660" target="_blank">Interview with Cheyenna Weber</a> from UBrainTV</p>
-<p><a href="http://www.freelancersunion.org/blog/2013/12/24/q-cheyenna-weber-solidarity-nyc/" target="_blank">&#8220;Looking for a little solidarity? Here&#8217;s a map&#8221;</a> from Freelancers Union</p>
-<p>&#8220;Nonprofits and Solidarity Economies&#8221;  (<a href="http://nonprofitfinancefund.org/blog/community" target="_blank">Part 1 </a>and <a href="http://www.unsectored.net/nonprofits-and-solidarity-economies/" target="_blank">Part 2</a>) from Nonprofit Finance Fund</p>
-<p>&nbsp;</p>
-<p><strong>Conferences</strong></p>
-<p><a href="http://neweconomy.net/content/financing-new-economy-0" target="_blank">&#8220;Financing a New Economy&#8221;</a> panel at ReRoute: Building Youth and Student Power for a New Economy, July 2013</p>
-<p><a href="http://neweconomy.net/content/teaching-and-learning-new-economics" target="_blank">&#8220;Teaching and Learning a New Economics&#8221;</a> panel at ReRoute, July 2013</p>
-<p><a href="http://neweconomy.net/content/mapping-new-economy" target="_blank">&#8220;Mapping the New Economy&#8221; </a>workshop at ReRoute, July 2013</p>
-<p>&nbsp;</p>
-    </div>
-    <div class="clear"></div>
-  </div>
-              <div class="clear"></div>
-          </div>
-        </div>
-        <div class="clear"></div>
-      </div>
-      <div class="clear"></div>
-    </div>
-  </div>
-  <script>
-  
-  var sectionId = 'about';
-  var sectionWidth = 0;
-  $$('#' + sectionId + ' .page').each(function(page) {
-    sectionWidth += page.getSize().x;
-  });
-  $(sectionId).getElement('.slider').setStyle('width', sectionWidth);
-  
-  $$('#' + sectionId + ' .subpages a').each(function(link, index) {
-    var id = 'page-' + link.get('href').match(/\/([^\/]+)$/)[1];
-    if (index == 0) {
-      updateViewerHeight($(id), true);
-    }
-    var pos = $(id).getPosition($(id).getParent('.viewer'));
-    $(id).store('position', -pos.x);
-  });
-  
-  </script>
-</section>
-<section id="get-involved">
-  <div class="background">
-    <div class="extent">
-      <div class="left-column">
-        <h2>Support Us</h2>
-            <ul class="subpages">
-                      <li id="subpage-support-our-work"  class="selected"><a href="#/get-involved/support-our-work">Support Our Work</a></li>
-                      <li id="subpage-mailing-list" ><a href="#/get-involved/mailing-list">Mailing List</a></li>
-          </ul>
-          </div>
-      <div class="right-column">
-        <div class="viewer">
-          <div class="slider">
-              <div id="page-support-our-work" class="page">
-    <div class="main-content">
-      <h2>Support Our Work</h2>
-<p>For donations by check please make payable to our fiscal sponsor “Sustainable Markets Foundation” with SolidaityNYC in the memo. Mail checks to:</p>
-<blockquote><p>Sustainable Markets Foundation<br />
-45 West 36th Street, 6th Floor<br />
-New York, NY 10018-7635</p></blockquote>
-<p>Sustainable Markets Foundation is a 501(c)(3) charitable organization and all donations are tax deductible.</p>
-<p><strong>Online donations via credit card are also accepted via our <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=KVDT47N8KG5NS">PayPal account</a>.</strong></p>
-    </div>
-    <div class="clear"></div>
-  </div>
-    <div id="page-mailing-list" class="page">
-    <div class="main-content">
-      <h2>SolidarityNYC welcomes your interest and support!</h2>
-<p>Please join our mailing list for updates and send us an email at info (at) solidaritynyc (dot) org to let us know how you want to get involved.</p>
-<h3>Join Our Mailing List</h3>
-<form method="post" action="http://solidaritynyc.us2.list-manage.com/subscribe/post?u=8bc085952dcf6e8cc2c9c734f&amp;id=4b7895829f" class="validate" id="mc-embedded-subscribe-form">
-<div class="mc-field-group">
-    <label for="mce-EMAIL">Email Address (required)</label><input type="text" name="EMAIL" class="required email" id="mce-EMAIL">
-  </div>
-<div class="mc-field-group">
-    <label for="mce-FNAME">First Name</label><input type="text" name="FNAME" id="mce-FNAME">
-  </div>
-<div class="mc-field-group">
-    <label for="mce-LNAME">Last Name</label><input type="text" name="LNAME" id="mce-LNAME">
-  </div>
-<div class="mc-field-group">
-    <label for="mce-MMERGE3">How did you hear about SolidarityNYC?</label><input type="text" name="MMERGE3" id="mce-MMERGE3">
-  </div>
-<div class="mc-field-group">
-    <label for="mce-MMERGE4">Is there anything you would like to share with us?</label><input type="text" name="MMERGE4" id="mce-MMERGE4">
-  </div>
-<div class="mc-field-group">
-    <label class="input-group-label">What is your interest in the solidarity economy?</label></p>
-<ul>
-<li><input type="checkbox" value="1" name="group[1][1]" id="mce-group[1]-1-0"><label for="mce-group[1]-1-0">Food Coops</label></li>
-<li><input type="checkbox" value="2" name="group[1][2]" id="mce-group[1]-1-1"><label for="mce-group[1]-1-1">Intentional communities and collective housing</label></li>
-<li><input type="checkbox" value="4" name="group[1][4]" id="mce-group[1]-1-2"><label for="mce-group[1]-1-2">Worker Coops and Workplace Democracy</label></li>
-<li><input type="checkbox" value="8" name="group[1][8]" id="mce-group[1]-1-3"><label for="mce-group[1]-1-3">Time Banks, Barter Networks, and Community Currencies</label></li>
-<li><input type="checkbox" value="16" name="group[1][16]" id="mce-group[1]-1-4"><label for="mce-group[1]-1-4">Credit Unions and Community Finance</label></li>
-<li><input type="checkbox" value="32" name="group[1][32]" id="mce-group[1]-1-5"><label for="mce-group[1]-1-5">Community Land Trusts</label></li>
-<li><input type="checkbox" value="64" name="group[1][64]" id="mce-group[1]-1-6"><label for="mce-group[1]-1-6">Community Gardens and Farms</label></li>
-<li><input type="checkbox" value="128" name="group[1][128]" id="mce-group[1]-1-7"><label for="mce-group[1]-1-7">Freeganism</label></li>
-<li><input type="checkbox" value="256" name="group[1][256]" id="mce-group[1]-1-8"><label for="mce-group[1]-1-8">Other</label></li>
-</ul></div>
-<p>  <input type="submit" value="Subscribe" name="subscribe" class="btn" id="mc-embedded-subscribe"><br />
-</form>
-    </div>
-    <div class="clear"></div>
-  </div>
-              <div class="clear"></div>
-          </div>
-        </div>
-        <div class="clear"></div>
-      </div>
-      <div class="clear"></div>
-    </div>
-  </div>
-  <script>
-  
-  var sectionId = 'get-involved';
-  var sectionWidth = 0;
-  $$('#' + sectionId + ' .page').each(function(page) {
-    sectionWidth += page.getSize().x;
-  });
-  $(sectionId).getElement('.slider').setStyle('width', sectionWidth);
-  
-  $$('#' + sectionId + ' .subpages a').each(function(link, index) {
-    var id = 'page-' + link.get('href').match(/\/([^\/]+)$/)[1];
-    if (index == 0) {
-      updateViewerHeight($(id), true);
-    }
-    var pos = $(id).getPosition($(id).getParent('.viewer'));
-    $(id).store('position', -pos.x);
-  });
-  
-  </script>
-</section>
-    <!-- Powered by WPtouch: 3.1.5 -->
+    
   </body>
 </html>

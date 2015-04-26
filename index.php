@@ -38,24 +38,29 @@ if ("http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}" != "$base_url/") {
           path.shift();
         }
         var first = path.shift();
+        // pf+ modifications to logic here to support tag urls
         if ($(first)) {
           scroll.start(0, Math.max(0, $(first).getPosition().y - 10));
-          if (first == 'map') {
-            hideMapIntro();
-          }
-          if (path.length > 0) {
-            var second = path.shift();
-            if (second && second != '') {
-              if (first == 'map') {
-                showMapLocation(second);
-              } else if (first == 'videos') {
-                playVideo(second);
-              } else {
-                showPage(second);
-              }
+        }
+        if (first == 'map'||first=='tag') {
+          hideMapIntro();
+        }
+        if (path.length > 0) {
+          var second = path.shift();
+          if (second && second != '') {
+            if (first == 'map') {
+              showMapLocation(second);
+            } else if (first == 'tag') {
+                var tag_id = parseInt(second);
+                showTag(tag_id);
+            } else if (first == 'videos') {
+              playVideo(second);
+            } else {
+              showPage(second);
             }
           }
         }
+        // pf-
       }
     }
     
@@ -84,7 +89,9 @@ if ("http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}" != "$base_url/") {
       hashListener = new HashListener();
       hashListener.addEvent('hashChanged', hashChanged);
       hashListener.start();
-      $$('a[href^="#/"]').addEvent('click', function(e) {
+      // pf+ modified event to apply in tag-generated listings
+      $$(document.body).addEvent('click:relay(a[href^="#/"])', function(e) {
+      // pf-
         e.stop();
         var href = this.get('href');
         hashListener.updateHash(href);
