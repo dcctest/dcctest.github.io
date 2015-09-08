@@ -11,6 +11,12 @@
     <link rel="stylesheet" href="wp-content/themes/map/style.css">
     <script src="wp-content/themes/map/mootools-core-1.4.5-full-nocompat-yc.js"></script>
     <script src="wp-content/themes/map/mootools-more-1.4.0.1.js"></script>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script>
+     var $j = jQuery.noConflict();
+    </script>
+    <link href="//cdnjs.cloudflare.com/ajax/libs/select2/4.0.0/css/select2.min.css" rel="stylesheet" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/select2/4.0.0/js/select2.min.js"></script>
     <script src="wp-content/themes/map/HashListener.js"></script>
     <!--[if lt IE 9]>
     <script src="wp-content/themes/map/html5shiv.js"></script>
@@ -131,6 +137,11 @@
             <a href="#/Map" class="Map">Map</a>
 <a href="#/Directory" class="Directory">Directory</a>
           </div>
+          <div class="search-box">
+              <select class="site-search search-our-city"">
+                  <option value="" selected="selected">Search our City</option>
+              </select>
+          </div>
         </div>
         <div class="clear"></div>
       </div>
@@ -233,6 +244,7 @@
   var id_to_tag = {};
   
   var location_types = {};
+  var search_data = [];
   // pf-
   
   var infowindow = new google.maps.InfoWindow();
@@ -327,6 +339,8 @@
 	  if (!tag_to_id[tag]) {
 	    tag_count++;
 	    tag_to_id[tag] = tag_count;
+            search_data.push({id: search_data.length, text: tag,
+                              kind: 'tag', obj: tag_count});
 	    id_to_tag[tag_count] = tag;
 	  }
 	}
@@ -470,6 +484,7 @@
 	  cat2short[c.Category] = c.Shortcode;
           location_types[c.Shortcode] = "/wp-content/themes/map/icons2015/" + c.Shortcode + ".png";
 	  var filter = new Element('a', {
+            "class": "type-" + c.Shortcode,
 	    href: "#type-" + c.Shortcode,
 	    "data-type": c.Shortcode,
 	    style: "background-image: url(" + location_types[c.Shortcode] + ");",
@@ -481,6 +496,8 @@
 	    html: c.Category
 	  });
 	  $("add_category").adopt(opt);
+          search_data.push({id: search_data.length, text: c.Category,
+                            icon: c.Shortcode, kind: 'category', obj: c});
 	}
 	function compare(a,b) {
 	  if (a.Name < b.Name)
@@ -495,10 +512,45 @@
 	  location.slug = "listing_" + i;
 	  location.id = i;
 	  location.type = cat2short[location.Category];
+          search_data.push({id: search_data.length, text: location.Name,
+                            all: location.Description,
+                            icon: location.type,
+                            kind: 'location', obj: location});
         }
 	initializeDirectory();
 	initializeLocations();
 	initializeDirectoryPages();
+        $j(".search-our-city").select2({
+            placeholder: "Search our city",
+            "data": search_data,
+            "templateResult": function(state) {
+                if (!state.id) { return state.text; }
+                if (!state.icon) { return state.text; }
+                return $j(
+                    '<span><div style="background-image:url(\'' + location_types[state.icon] + '\')" class="search-icon" /> ' + state.text + '</span>'
+                );
+                return $state;
+            }
+        });
+        $j(".search-our-city").on("change",
+                                  function (e) {
+                                      var id = $j(e.target).val();
+                                      console.log(id);
+                                      var v = search_data[id];
+                                      console.log(v);
+                                      hideMapIntro();
+                                      if (v.kind=='category') {
+                                          var category = v.obj;
+                                          showCategory(category.Shortcode);
+                                      } else if (v.kind=='tag') {
+                                          var tag = v.obj;
+                                          showTag(tag);
+                                      } else {
+                                          var location = v.obj;
+                                          showCategory(location.type);
+                                          showMapLocation(location.slug);
+                                      }
+                                  });
       },
       onError: function(txt,err) {
 	console.log(err);
@@ -824,7 +876,7 @@ window.addEvent('domready', function() {
       <div class="left-column">
         <h2>Directory</h2>
         <div id="location_type" class="filter">
-          <a href="#type-all" data-type="all" class="selected first">All categories</a>
+          <a href="#type-all" data-type="all" class="type-all selected first">All categories</a>
         </div>
       </div>
       <div class="right-column">
@@ -856,6 +908,54 @@ window.addEvent('domready', function() {
         }
       }
     }
+  }
+
+  function showCategory(type) {
+      var link = $('directory').getElement('a.type-' + (type||'all'));
+      console.log(link);
+      $$('#location_type a.selected').removeClass('selected');
+      link.addClass('selected');
+      $$('#directory .slider .holder.selected').removeClass('selected');
+      var holder = $('locations-' + type);
+      if (!holder) {
+          holder = new Element('div', {
+              id: 'locations-' + type,
+              'class': 'holder'
+          });
+          holder.inject($('directory').getElement('.slider'));
+          var list = new Element('ul');
+          list.inject(holder);
+          $$('#locations-all li').each(function(item) {
+              if (item.hasClass(type)) {
+                  var clone = item.clone();
+                  clone.inject(list);
+                  if (list.getElements('li').length == 12) {
+                      list = new Element('ul');
+                      list.inject(holder);
+                  }
+              }
+          });
+      }
+      holder.addClass('selected');
+      var locationCount = holder.getElements('li').length;
+      var pages = Math.ceil(locationCount / 36);
+      $$('#directory .pagination a').each(function(link, index) {
+          if (index == 0) {
+              link.addClass('selected');
+          } else {
+              link.removeClass('selected');
+          }
+          if (index < pages && !(index == 0 && pages == 1)) {
+              link.removeClass('hidden');
+          } else {
+              link.addClass('hidden');
+          }
+      });
+      $('location-count').set('html', locationCount + ' locations');
+      $('directory').getElement('.slider').setStyle('left', 0);
+      updateMarkers();
+      closeMarker();
+      resizeLocations();
   }
 
   function showTag(tag_id) {
@@ -966,49 +1066,7 @@ window.addEvent('domready', function() {
       link.addEvent('click', function(e) {
         e.stop();
         var type = link.get('data-type');
-        $$('#location_type a.selected').removeClass('selected');
-        link.addClass('selected');
-        $$('#directory .slider .holder.selected').removeClass('selected');
-        var holder = $('locations-' + type);
-        if (!holder) {
-          holder = new Element('div', {
-            id: 'locations-' + type,
-            'class': 'holder'
-          });
-          holder.inject($('directory').getElement('.slider'));
-          var list = new Element('ul');
-          list.inject(holder);
-          $$('#locations-all li').each(function(item) {
-            if (item.hasClass(type)) {
-              var clone = item.clone();
-              clone.inject(list);
-              if (list.getElements('li').length == 12) {
-                list = new Element('ul');
-                list.inject(holder);
-              }
-            }
-          });
-        }
-        holder.addClass('selected');
-        var locationCount = holder.getElements('li').length;
-        var pages = Math.ceil(locationCount / 36);
-        $$('#directory .pagination a').each(function(link, index) {
-          if (index == 0) {
-            link.addClass('selected');
-          } else {
-            link.removeClass('selected');
-          }
-          if (index < pages && !(index == 0 && pages == 1)) {
-            link.removeClass('hidden');
-          } else {
-            link.addClass('hidden');
-          }
-        });
-        $('location-count').set('html', locationCount + ' locations');
-        $('directory').getElement('.slider').setStyle('left', 0);
-        updateMarkers();
-        closeMarker();
-        resizeLocations();
+        showCategory(type);
       });
     });
   }
