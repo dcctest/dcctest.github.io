@@ -101,6 +101,7 @@ Template Name: Map
   var id_to_tag = {};
   
   var location_types = {};
+  var search_data = [];
   // pf-
   
   var infowindow = new google.maps.InfoWindow();
@@ -195,6 +196,8 @@ Template Name: Map
 	  if (!tag_to_id[tag]) {
 	    tag_count++;
 	    tag_to_id[tag] = tag_count;
+            search_data.push({id: search_data.length, text: tag,
+                              kind: 'tag', obj: tag_count});
 	    id_to_tag[tag_count] = tag;
 	  }
 	}
@@ -338,6 +341,7 @@ Template Name: Map
 	  cat2short[c.Category] = c.Shortcode;
           location_types[c.Shortcode] = "/wp-content/themes/map/icons2015/" + c.Shortcode + ".png";
 	  var filter = new Element('a', {
+            "class": "type-" + c.Shortcode,
 	    href: "#type-" + c.Shortcode,
 	    "data-type": c.Shortcode,
 	    style: "background-image: url(" + location_types[c.Shortcode] + ");",
@@ -349,6 +353,8 @@ Template Name: Map
 	    html: c.Category
 	  });
 	  $("add_category").adopt(opt);
+          search_data.push({id: search_data.length, text: c.Category,
+                            icon: c.Shortcode, kind: 'category', obj: c});
 	}
 	function compare(a,b) {
 	  if (a.Name < b.Name)
@@ -363,10 +369,45 @@ Template Name: Map
 	  location.slug = "listing_" + i;
 	  location.id = i;
 	  location.type = cat2short[location.Category];
+          search_data.push({id: search_data.length, text: location.Name,
+                            all: location.Description,
+                            icon: location.type,
+                            kind: 'location', obj: location});
         }
 	initializeDirectory();
 	initializeLocations();
 	initializeDirectoryPages();
+        $j(".search-our-city").select2({
+            placeholder: "Search our city",
+            "data": search_data,
+            "templateResult": function(state) {
+                if (!state.id) { return state.text; }
+                if (!state.icon) { return state.text; }
+                return $j(
+                    '<span><div style="background-image:url(\'' + location_types[state.icon] + '\')" class="search-icon" /> ' + state.text + '</span>'
+                );
+                return $state;
+            }
+        });
+        $j(".search-our-city").on("change",
+                                  function (e) {
+                                      var id = $j(e.target).val();
+                                      console.log(id);
+                                      var v = search_data[id];
+                                      console.log(v);
+                                      hideMapIntro();
+                                      if (v.kind=='category') {
+                                          var category = v.obj;
+                                          showCategory(category.Shortcode);
+                                      } else if (v.kind=='tag') {
+                                          var tag = v.obj;
+                                          showTag(tag);
+                                      } else {
+                                          var location = v.obj;
+                                          showCategory(location.type);
+                                          showMapLocation(location.slug);
+                                      }
+                                  });
       },
       onError: function(txt,err) {
 	console.log(err);

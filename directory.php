@@ -16,7 +16,7 @@ $total = count($locations);
       <div class="left-column">
         <h2><?php the_title(); ?></h2>
         <div id="location_type" class="filter">
-          <a href="#type-all" data-type="all" class="selected first">All categories</a>
+          <a href="#type-all" data-type="all" class="type-all selected first">All categories</a>
         </div>
       </div>
       <div class="right-column">
@@ -48,6 +48,54 @@ $total = count($locations);
         }
       }
     }
+  }
+
+  function showCategory(type) {
+      var link = $('directory').getElement('a.type-' + (type||'all'));
+      console.log(link);
+      $$('#location_type a.selected').removeClass('selected');
+      link.addClass('selected');
+      $$('#directory .slider .holder.selected').removeClass('selected');
+      var holder = $('locations-' + type);
+      if (!holder) {
+          holder = new Element('div', {
+              id: 'locations-' + type,
+              'class': 'holder'
+          });
+          holder.inject($('directory').getElement('.slider'));
+          var list = new Element('ul');
+          list.inject(holder);
+          $$('#locations-all li').each(function(item) {
+              if (item.hasClass(type)) {
+                  var clone = item.clone();
+                  clone.inject(list);
+                  if (list.getElements('li').length == 12) {
+                      list = new Element('ul');
+                      list.inject(holder);
+                  }
+              }
+          });
+      }
+      holder.addClass('selected');
+      var locationCount = holder.getElements('li').length;
+      var pages = Math.ceil(locationCount / 36);
+      $$('#directory .pagination a').each(function(link, index) {
+          if (index == 0) {
+              link.addClass('selected');
+          } else {
+              link.removeClass('selected');
+          }
+          if (index < pages && !(index == 0 && pages == 1)) {
+              link.removeClass('hidden');
+          } else {
+              link.addClass('hidden');
+          }
+      });
+      $('location-count').set('html', locationCount + ' locations');
+      $('directory').getElement('.slider').setStyle('left', 0);
+      updateMarkers();
+      closeMarker();
+      resizeLocations();
   }
 
   function showTag(tag_id) {
@@ -158,49 +206,7 @@ $total = count($locations);
       link.addEvent('click', function(e) {
         e.stop();
         var type = link.get('data-type');
-        $$('#location_type a.selected').removeClass('selected');
-        link.addClass('selected');
-        $$('#directory .slider .holder.selected').removeClass('selected');
-        var holder = $('locations-' + type);
-        if (!holder) {
-          holder = new Element('div', {
-            id: 'locations-' + type,
-            'class': 'holder'
-          });
-          holder.inject($('directory').getElement('.slider'));
-          var list = new Element('ul');
-          list.inject(holder);
-          $$('#locations-all li').each(function(item) {
-            if (item.hasClass(type)) {
-              var clone = item.clone();
-              clone.inject(list);
-              if (list.getElements('li').length == 12) {
-                list = new Element('ul');
-                list.inject(holder);
-              }
-            }
-          });
-        }
-        holder.addClass('selected');
-        var locationCount = holder.getElements('li').length;
-        var pages = Math.ceil(locationCount / 36);
-        $$('#directory .pagination a').each(function(link, index) {
-          if (index == 0) {
-            link.addClass('selected');
-          } else {
-            link.removeClass('selected');
-          }
-          if (index < pages && !(index == 0 && pages == 1)) {
-            link.removeClass('hidden');
-          } else {
-            link.addClass('hidden');
-          }
-        });
-        $('location-count').set('html', locationCount + ' locations');
-        $('directory').getElement('.slider').setStyle('left', 0);
-        updateMarkers();
-        closeMarker();
-        resizeLocations();
+        showCategory(type);
       });
     });
   }

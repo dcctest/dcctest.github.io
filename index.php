@@ -20,6 +20,12 @@ if ("http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}" != "$base_url/") {
     <link rel="stylesheet" href="<?php bloginfo('stylesheet_url'); ?>">
     <script src="<?php bloginfo('stylesheet_directory'); ?>/mootools-core-1.4.5-full-nocompat-yc.js"></script>
     <script src="<?php bloginfo('stylesheet_directory'); ?>/mootools-more-1.4.0.1.js"></script>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script>
+     var $j = jQuery.noConflict();
+    </script>
+    <link href="//cdnjs.cloudflare.com/ajax/libs/select2/4.0.0/css/select2.min.css" rel="stylesheet" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/select2/4.0.0/js/select2.min.js"></script>
     <script src="<?php bloginfo('stylesheet_directory'); ?>/HashListener.js"></script>
     <!--[if lt IE 9]>
     <script src="<?php bloginfo('stylesheet_directory'); ?>/html5shiv.js"></script>
@@ -139,6 +145,11 @@ if ("http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}" != "$base_url/") {
         <div class="right-column">
           <div class="pages">
             <?php map_nav_items(); ?>
+          </div>
+          <div class="search-box">
+              <select class="site-search search-our-city"">
+                  <option value="" selected="selected">Search our City</option>
+              </select>
           </div>
         </div>
         <div class="clear"></div>

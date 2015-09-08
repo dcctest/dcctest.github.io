@@ -85,6 +85,37 @@ nav a:hover {
 nav .pages {
   font-size: 18px;
   line-height: 20px;
+  display: inline-block;
+}
+
+nav .search-box {
+  display: block;
+  float: right;
+}
+
+nav .site-search {
+  width: 300px;
+  font: "helvetica neue", helvetica, arial, sans-serif;
+  outline: none;
+}
+
+.select2-container {
+  z-index: 10000;
+  text-align: left;
+  font: "helvetica neue", helvetica, arial, sans-serif;
+}
+
+.select2-container .select2-selection--single{
+  outline: 0;
+}
+
+div.search-icon {
+  display: inline-block;
+  height: 1em;
+  width: 1em;
+  background-repeat: no-repeat;
+  background-repeat:no-repeat;
+  background-position: center center;
 }
 
 section {
