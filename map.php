@@ -143,20 +143,22 @@ Template Name: Map
       if (type=='unknown') return;
     }
     var bounds = new google.maps.LatLngBounds();
+    var ct = 0;
     Object.each(directory, function(location) {
       var visible = filter(location);
       location.marker.setVisible(visible);
       if (visible) {
+        ct++;
         bounds.extend(location.marker.getPosition());
       }
     });
-      /*
-    map.setCenter(bounds.getCenter());
-    map.fitBounds(bounds);
-    map.setZoom(map.getZoom()-1); 
-    if(map.getZoom()>15) map.setZoom(15);
-    if(map.getZoom()<12) map.setZoom(12);
-*/
+    if (ct<10) {
+      map.setCenter(bounds.getCenter());
+      map.fitBounds(bounds);
+      map.setZoom(map.getZoom()); 
+      if(map.getZoom()>15) map.setZoom(15);
+      //if(map.getZoom()<12) map.setZoom(12);
+    }
   }
   
   $('map_intro').getElement('a.explore').addEvent('click', function(e) {

@@ -137,11 +137,6 @@
             <a href="#/Map" class="Map">Map</a>
 <a href="#/Directory" class="Directory">Directory</a>
           </div>
-          <div class="search-box">
-              <select class="site-search search-our-city"">
-                  <option value="" selected="selected">Search our City</option>
-              </select>
-          </div>
         </div>
         <div class="clear"></div>
       </div>
@@ -286,20 +281,22 @@
       if (type=='unknown') return;
     }
     var bounds = new google.maps.LatLngBounds();
+    var ct = 0;
     Object.each(directory, function(location) {
       var visible = filter(location);
       location.marker.setVisible(visible);
       if (visible) {
+        ct++;
         bounds.extend(location.marker.getPosition());
       }
     });
-      /*
-    map.setCenter(bounds.getCenter());
-    map.fitBounds(bounds);
-    map.setZoom(map.getZoom()-1); 
-    if(map.getZoom()>15) map.setZoom(15);
-    if(map.getZoom()<12) map.setZoom(12);
-*/
+    if (ct<10) {
+      map.setCenter(bounds.getCenter());
+      map.fitBounds(bounds);
+      map.setZoom(map.getZoom()); 
+      if(map.getZoom()>15) map.setZoom(15);
+      //if(map.getZoom()<12) map.setZoom(12);
+    }
   }
   
   $('map_intro').getElement('a.explore').addEvent('click', function(e) {
@@ -561,6 +558,13 @@
   </script>
   <div class="extent">
     <div id="add_location">
+
+          <div id="search-our-city" class="search-box">
+              <select class="site-search search-our-city"">
+                  <option value="" selected="selected">Search our City</option>
+              </select>
+          </div>
+
   <a href="#show_add_location" class="dropdown">Add a location</a>
   <div class="relative">
     <a href="#" class="cancel hidden">Cancel <span>&times;</span></a>
@@ -691,6 +695,7 @@ window.addEvent('domready', function() {
     dropdown.toggleClass('open');
     if (dropdown.hasClass('open')) {
       $('add_location').addClass('open');
+      $('search-our-city').addClass('hidden');
       hideMapIntro();
       closeMarker();
       var height = $('location_options').getElement('.controls').getSize().y;
@@ -700,6 +705,7 @@ window.addEvent('domready', function() {
       addLocationCheck();
     } else {
       hideAddLocation();
+      $('search-our-city').removeClass('hidden');
     }
   });
   

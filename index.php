@@ -146,11 +146,6 @@ if ("http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}" != "$base_url/") {
           <div class="pages">
             <?php map_nav_items(); ?>
           </div>
-          <div class="search-box">
-              <select class="site-search search-our-city"">
-                  <option value="" selected="selected">Search our City</option>
-              </select>
-          </div>
         </div>
         <div class="clear"></div>
       </div>

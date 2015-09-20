@@ -1,4 +1,11 @@
 <div id="add_location">
+
+          <div id="search-our-city" class="search-box">
+              <select class="site-search search-our-city"">
+                  <option value="" selected="selected">Search our City</option>
+              </select>
+          </div>
+
   <a href="#show_add_location" class="dropdown">Add a location</a>
   <div class="relative">
     <a href="#" class="cancel hidden">Cancel <span>&times;</span></a>
@@ -141,6 +148,7 @@ window.addEvent('domready', function() {
     dropdown.toggleClass('open');
     if (dropdown.hasClass('open')) {
       $('add_location').addClass('open');
+      $('search-our-city').addClass('hidden');
       hideMapIntro();
       closeMarker();
       var height = $('location_options').getElement('.controls').getSize().y;
@@ -150,6 +158,7 @@ window.addEvent('domready', function() {
       addLocationCheck();
     } else {
       hideAddLocation();
+      $('search-our-city').removeClass('hidden');
     }
   });
   

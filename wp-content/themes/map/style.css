@@ -88,13 +88,16 @@ nav .pages {
   display: inline-block;
 }
 
-nav .search-box {
-  display: block;
-  float: right;
+#add_location .search-box {
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  color: #333;
+  background-color: #dedede;
 }
 
-nav .site-search {
-  width: 300px;
+#add_location .site-search {
+  width: 200px;
   font: "helvetica neue", helvetica, arial, sans-serif;
   outline: none;
 }
@@ -107,6 +110,8 @@ nav .site-search {
 
 .select2-container .select2-selection--single{
   outline: 0;
+  border-radius: 0 !important;
+  border: 0px !important;
 }
 
 div.search-icon {
