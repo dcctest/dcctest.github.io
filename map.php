@@ -381,6 +381,7 @@ Template Name: Map
 	initializeDirectoryPages();
         $j(".search-our-city").select2({
             placeholder: "Search our city",
+            allowClear: true,
             "data": search_data,
             "templateResult": function(state) {
                 if (!state.id) { return state.text; }
@@ -394,9 +395,15 @@ Template Name: Map
         $j(".search-our-city").on("change",
                                   function (e) {
                                       var id = $j(e.target).val();
-                                      console.log(id);
+                                      if (id == "") {
+                                          // search has been cleared
+                                          showCategory('all');
+                                          map.setZoom(zoom);
+                                          map.setCenter(center); 
+                                          $j(e.target).close();
+                                          return false;
+                                      }
                                       var v = search_data[id];
-                                      console.log(v);
                                       hideMapIntro();
                                       if (v.kind=='category') {
                                           var category = v.obj;
@@ -409,6 +416,7 @@ Template Name: Map
                                           showCategory(location.type);
                                           showMapLocation(location.slug);
                                       }
+                                      return false;
                                   });
       },
       onError: function(txt,err) {

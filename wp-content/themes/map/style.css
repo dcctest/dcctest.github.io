@@ -114,6 +114,13 @@ nav .pages {
   border: 0px !important;
 }
 
+.select2-selection__clear {
+  position: relative;
+  color: #fff;
+  font-size: 150%;
+  text-shadow: 1px 1px 2px #888, -1px -1px 2px #888, 1px -1px 2px #888, -1px 1px 2px #888, 0 0 0.5em #000;
+}
+
 div.search-icon {
   display: inline-block;
   height: 1em;

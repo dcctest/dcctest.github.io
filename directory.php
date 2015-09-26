@@ -52,7 +52,6 @@ $total = count($locations);
 
   function showCategory(type) {
       var link = $('directory').getElement('a.type-' + (type||'all'));
-      console.log(link);
       $$('#location_type a.selected').removeClass('selected');
       link.addClass('selected');
       $$('#directory .slider .holder.selected').removeClass('selected');
