@@ -398,14 +398,14 @@
       for (var i = 1; i < 12; i++) {
         var clone = logo.clone();
         var num = i + 1;
-        clone.setStyle('background-image', 'url("wp-content/themes/map/logo/logo' + num + '.png")');
+        clone.setStyle('background-image', 'url("wp-content/themes/map/logo/logo2_chicago.png")');
         clone.fade('hide');
         clone.inject($('logo').getElement('h1'));
         logos.push(clone);
       }
       var index = 0;
       var z = 1;
-      logoInterval = setInterval(function() {
+      logoInterval = setTimeout(function() {
         var prevIndex = index;
         index = (index + 1) % logos.length;
         z++;
@@ -414,7 +414,7 @@
         logos[index].fade('in').retrieve('tween').chain(function() {
           logos[prevIndex].fade('hide');
         });
-      }, 10000);
+      }, 1000);
       
       
       var smallSize = $('map_canvas').getSize().y;
